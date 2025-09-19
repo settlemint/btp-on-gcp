@@ -13,7 +13,7 @@ module "gcp_dns_zone" {
   # Using the official Google Cloud DNS Terraform module
   # This module simplifies the creation and management of Cloud DNS zones
   source  = "terraform-google-modules/cloud-dns/google"
-  version = "5.3.0"
+  version = "6.1.0"
 
   # The GCP project where the DNS zone will be created
   project_id = var.gcp_project_id

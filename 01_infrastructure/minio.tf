@@ -48,9 +48,10 @@ resource "helm_release" "minio" {
   # Bitnami OCI registry (reliable, well-maintained charts)
   repository = "oci://registry-1.docker.io/bitnamicharts"
   chart      = "minio"
-  version    = "16.0.10"  # MinIO with Bitnami chart optimizations
-  
   # Deploy in the dependencies namespace
+
+  version    = "17.0.21"  # MinIO with Bitnami chart optimizations
+
   namespace  = var.dependencies_namespace
 
   # Create namespace if it doesn't exist (redundant with explicit creation)

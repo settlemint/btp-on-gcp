@@ -25,9 +25,7 @@ resource "helm_release" "redis" {
   # Bitnami OCI registry (reliable, well-maintained charts)
   repository = "oci://registry-1.docker.io/bitnamicharts"
   chart      = "redis"
-  version    = "20.13.4"  # Redis 7.x with Bitnami chart optimizations
-  
-  # Deploy in the dependencies namespace
+  version    = "22.0.7" # Redis with Bitnami chart optimizations
   namespace  = var.dependencies_namespace
 
   # Create namespace if it doesn't exist (redundant with explicit creation)

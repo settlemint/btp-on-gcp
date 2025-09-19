@@ -15,6 +15,7 @@ resource "helm_release" "nginx_ingress" {
   name    = "ingress-nginx"
   version = "4.12.3"  # Stable version with good GCP integration
 
+
   # Official ingress-nginx Helm repository
   repository = "https://kubernetes.github.io/ingress-nginx"
   chart      = "ingress-nginx"
