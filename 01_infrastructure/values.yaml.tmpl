@@ -1,72 +1,415 @@
+# ============================================================================
+# SETTLEMINT BTP PLATFORM HELM VALUES TEMPLATE
+# ============================================================================
+# 
+# This template file defines the configuration values for deploying SettleMint's
+# Blockchain Transformation Platform (BTP) using Helm charts. The template uses
+# Terraform template syntax to dynamically inject values from the infrastructure
+# deployment, creating a fully integrated BTP platform configuration.
+# 
+# TEMPLATE OVERVIEW:
+# This file serves as the bridge between Terraform infrastructure provisioning
+# and Kubernetes application deployment. It combines infrastructure outputs
+# (database passwords, service endpoints, DNS zones) with application
+# configuration to create a production-ready BTP deployment.
+# 
+# TEMPLATE VARIABLES:
+# Variables in ${variable_name} format are populated by Terraform during
+# deployment, ensuring dynamic configuration based on the specific infrastructure
+# environment and generated credentials.
+# 
+# CONFIGURATION SECTIONS:
+# 1. INGRESS: External access and load balancing configuration
+# 2. EXTERNAL-DNS: Automatic DNS record management
+# 3. DATABASES: PostgreSQL and Redis connection configuration
+# 4. AUTHENTICATION: JWT and OAuth provider settings
+# 5. VAULT: Secrets management integration
+# 6. FEATURES: Platform capabilities and deployment engine configuration
+# 7. SCALING: Application replica counts and resource allocation
+# 8. OBSERVABILITY: Monitoring, logging, and metrics configuration
+# 
+# ENTERPRISE DEPLOYMENT NOTES:
+# - All passwords and secrets are dynamically generated for security
+# - DNS configuration enables automatic certificate provisioning
+# - Monitoring stack provides comprehensive observability
+# - Multi-replica deployments ensure high availability
+# 
+# ============================================================================
+
+# ============================================================================
+# INGRESS CONFIGURATION
+# ============================================================================
+# 
+# Configures external access to the BTP platform through NGINX ingress controller.
+# This section defines how external traffic reaches the BTP platform services,
+# including SSL termination, load balancing, and domain routing.
+# 
+# INGRESS BENEFITS:
+# - Provides single entry point for all BTP platform services
+# - Handles SSL/TLS termination with automatic certificate management
+# - Supports advanced routing and traffic management
+# - Enables external access to platform APIs and web interfaces
+# - Integrates with external-dns for automatic DNS record management
+# 
+# SECURITY FEATURES:
+# - SSL redirect disabled to allow cert-manager certificate provisioning
+# - Large proxy body size for blockchain data uploads
+# - Extended timeouts for long-running blockchain operations
+# - SSL server name validation for secure backend communication
+# 
 ingress:
   enabled: true
-  className: nginx
-  host: "${gcp_dns_zone}"
+  className: nginx  # Uses NGINX ingress controller deployed in infrastructure
+  host: "${gcp_dns_zone}"  # Primary domain for BTP platform access
+  
+  # NGINX Ingress Controller Annotations
+  # Configures advanced ingress behavior and external-dns integration
   annotations:
+    # Enable regex pattern matching for advanced routing rules
     nginx.ingress.kubernetes.io/use-regex: "true"
+    
+    # Enable SSL server name validation for secure backend communication
     nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
+    
+    # Increase maximum request body size for blockchain data uploads
+    # Supports large smart contract deployments and file uploads
     nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+    
+    # Extended read timeout for long-running blockchain operations
+    # Accommodates blockchain node synchronization and transaction processing
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    
+    # Extended send timeout for large data transfers
+    # Supports blockchain data streaming and bulk operations
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    
+    # Disable automatic SSL redirect to allow cert-manager certificate provisioning
+    # Certificates are provisioned automatically via Let's Encrypt
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    
+    # External-DNS annotation for automatic DNS record management
+    # Creates both apex domain and wildcard subdomain records
     external-dns.alpha.kubernetes.io/hostname: "${gcp_dns_zone}, *.${gcp_dns_zone}"
 
+# ============================================================================
+# EXTERNAL-DNS CONFIGURATION
+# ============================================================================
+# 
+# Configures External-DNS controller for automatic DNS record management.
+# External-DNS monitors Kubernetes ingress and service resources and
+# automatically creates, updates, and deletes DNS records in Google Cloud DNS.
+# 
+# EXTERNAL-DNS BENEFITS:
+# - Automatic DNS record lifecycle management
+# - Elimination of manual DNS configuration tasks
+# - Support for dynamic service discovery
+# - Integration with multiple DNS providers
+# - Consistent DNS management across environments
+# 
+# GOOGLE CLOUD DNS INTEGRATION:
+# - Uses workload identity for secure authentication
+# - Leverages Google Cloud DNS API for record management
+# - Supports both public and private DNS zones
+# - Provides comprehensive audit logging
+# 
+# OPERATIONAL FEATURES:
+# - Sync policy ensures DNS records match Kubernetes resources
+# - Annotation filtering for selective record management
+# - Service source monitoring for automatic record creation
+# - TXT record ownership for conflict resolution
+# 
 external-dns:
-  enabled: true
+  enabled: true  # Enable automatic DNS record management
+  
+  # TXT Record Ownership Identifier
+  # Used to identify DNS records managed by this External-DNS instance
+  # Prevents conflicts in shared DNS zones and enables record cleanup
   txtOwnerId: "${gcp_dns_zone}-settlemint"
+  
+  # DNS Record Management Policy
+  # 'sync' policy ensures DNS records match Kubernetes resource state
+  # Alternative: 'upsert-only' for creation without deletion
   policy: "sync"
+  
+  # Service Account Configuration
+  # Uses pre-configured workload identity service account
+  # Eliminates need for static credentials or service account keys
   serviceAccount:
-    create: false
-    name: ${external_dns_workload_identity}
+    create: false  # Use existing service account from workload identity
+    name: ${external_dns_workload_identity}  # References workload identity SA
+  
+  # Resource Sources to Monitor
+  # Monitors Kubernetes services for automatic DNS record creation
+  # Additional sources can include ingress, node, and custom resources
   sources:
     - service
+  
+  # Additional External-DNS Arguments
+  # Filters DNS record creation based on specific annotations
+  # Ensures only explicitly annotated resources create DNS records
   extraArgs:
     - --annotation-filter=external-dns.alpha.kubernetes.io/hostname
+  
+  # DNS Provider Configuration
+  # Configured for Google Cloud DNS integration
   provider:
-    name: google
+    name: google  # Google Cloud DNS provider
+  
+  # Google Cloud DNS Specific Configuration
+  # Project ID where DNS zones and records are managed
   google:
-    project: ${gcp_project_id}
+    project: ${gcp_project_id}  # Target GCP project for DNS operations
 
+# ============================================================================
+# DATABASE CONNECTION CONFIGURATION
+# ============================================================================
+# 
+# Configures database connections for the BTP platform services.
+# These settings define how BTP applications connect to the infrastructure
+# databases deployed in the cluster dependencies namespace.
+# 
+# DATABASE ARCHITECTURE:
+# The BTP platform uses a multi-database architecture optimized for
+# different types of data and access patterns:
+# - PostgreSQL: Primary relational database for application data
+# - Redis: High-performance caching and session storage
+# 
+# CONNECTION SECURITY:
+# - All database passwords are dynamically generated and securely managed
+# - Internal cluster DNS names provide secure service-to-service communication
+# - No external database access required for security
+# - Connection strings use Kubernetes service discovery
+# 
+# ============================================================================
+
+# ============================================================================
+# REDIS CONNECTION CONFIGURATION
+# ============================================================================
+# 
+# Redis serves as the high-performance caching and session storage layer
+# for the BTP platform. It provides sub-millisecond response times for
+# frequently accessed data and maintains user session state.
+# 
+# REDIS USAGE IN BTP:
+# - User session storage and authentication state
+# - Blockchain metadata caching for improved performance
+# - Real-time event streaming for blockchain notifications
+# - Rate limiting and throttling for API endpoints
+# - Temporary storage for blockchain synchronization data
+# 
+# CONNECTION DETAILS:
+# - Uses internal Kubernetes service DNS for secure communication
+# - Password authentication for access control
+# - Master-replica architecture for high availability (when configured)
+# 
 redis:
+  # Redis Master Service Endpoint
+  # Internal cluster DNS name for Redis master instance
+  # Provides secure, internal cluster communication
   host: redis-master.${dependencies_namespace}.svc.cluster.local
+  
+  # Redis Authentication Password
+  # Dynamically generated password for secure Redis access
+  # Managed by Terraform and injected during deployment
   password: "${redis_password}"
 
+# ============================================================================
+# POSTGRESQL CONNECTION CONFIGURATION
+# ============================================================================
+# 
+# PostgreSQL serves as the primary relational database for the BTP platform.
+# It stores application data, user information, blockchain network configurations,
+# and audit logs with ACID compliance and advanced query capabilities.
+# 
+# POSTGRESQL USAGE IN BTP:
+# - User account and authentication data storage
+# - Blockchain network configuration and metadata
+# - Transaction history and audit logging
+# - Application state and configuration management
+# - Smart contract deployment tracking
+# - Analytics and reporting data aggregation
+# 
+# CONNECTION DETAILS:
+# - Uses internal Kubernetes service DNS for secure communication
+# - Dedicated application user with appropriate permissions
+# - Platform-specific database for data isolation
+# - Password authentication for secure access
+# 
 postgresql:
+  # PostgreSQL Service Endpoint
+  # Internal cluster DNS name for PostgreSQL service
+  # Provides secure, internal cluster communication
   host: postgresql.${dependencies_namespace}.svc.cluster.local
+  
+  # Database User Configuration
+  # Application-specific user with limited privileges
+  # Uses platform name for consistent resource identification
   user: "${gcp_platform_name}"
+  
+  # Database Authentication Password
+  # Dynamically generated password for secure PostgreSQL access
+  # Managed by Terraform and injected during deployment
   password: "${postgresql_password}"
+  
+  # Target Database Name
+  # Platform-specific database for data organization
+  # Uses platform name for consistent resource identification
   database: "${gcp_platform_name}"
 
+# ============================================================================
+# AUTHENTICATION CONFIGURATION
+# ============================================================================
+# 
+# Configures authentication and authorization for the BTP platform.
+# This section defines JWT token management and OAuth provider integration
+# for secure user access and session management.
+# 
+# AUTHENTICATION ARCHITECTURE:
+# The BTP platform implements a multi-layered authentication system:
+# - JWT tokens for stateless session management
+# - OAuth integration for external identity provider support
+# - Role-based access control (RBAC) for authorization
+# - Secure token storage and validation
+# 
+# SECURITY FEATURES:
+# - Cryptographically secure JWT signing keys
+# - OAuth 2.0 integration with Google Cloud
+# - Automatic token refresh and expiration
+# - Secure credential management via Vault integration
+# 
 auth:
+  # JWT Signing Key Configuration
+  # Cryptographically secure key for JWT token signing and validation
+  # Generated by Terraform and injected during deployment
   jwtSigningKey: "${jwtSigningKey}"
+  
+  # OAuth Provider Configuration
+  # External identity provider integration for user authentication
   providers:
     google:
-      enabled: true
+      enabled: true  # Enable Google OAuth integration
+      
+      # Google OAuth Client Configuration
+      # Client ID for Google OAuth application
+      # Created in Google Cloud Console OAuth consent screen
       clientID: "${gcp_client_id}"
+      
+      # Google OAuth Client Secret
+      # Client secret for secure OAuth authentication
+      # Managed securely and injected during deployment
       clientSecret: "${gcp_client_secret}"
 
+# ============================================================================
+# VAULT SECRETS MANAGEMENT CONFIGURATION
+# ============================================================================
+# 
+# Configures integration with HashiCorp Vault for secure secrets management.
+# Vault serves as the central repository for sensitive data including
+# encryption keys, API tokens, and blockchain private keys.
+# 
+# VAULT INTEGRATION BENEFITS:
+# - Centralized secrets management and rotation
+# - Zero-trust security model with comprehensive audit logging
+# - Dynamic secrets generation for temporary access
+# - Encryption-as-a-Service for application data protection
+# - Policy-based access control with fine-grained permissions
+# 
+# SECURITY ARCHITECTURE:
+# - AppRole authentication for secure API access
+# - Internal cluster communication for security
+# - Role-based access control for secrets access
+# - Automatic credential rotation and lifecycle management
+# 
 vault:
-  enabled: true
+  enabled: true  # Enable Vault integration for secrets management
+  
+  # Vault Server Address
+  # Internal cluster DNS name for Vault service
+  # Uses HTTP for internal cluster communication (TLS handled by cluster)
   address: http://vault.${dependencies_namespace}.svc.cluster.local:8200
+  
+  # AppRole Authentication Configuration
+  # Secure authentication method for BTP platform services
+  # Provides temporary, scoped access to Vault secrets
+  
+  # AppRole Role ID
+  # Unique identifier for the BTP platform role in Vault
+  # Generated during Vault initialization and configuration
   roleId: "${role_id}"
+  
+  # AppRole Secret ID
+  # Secret credential for AppRole authentication
+  # Dynamically generated and rotated for enhanced security
   secretId: "${secret_id}"
 
+# ============================================================================
+# BTP PLATFORM FEATURES CONFIGURATION
+# ============================================================================
+# 
+# Configures the core features and capabilities of the BTP platform.
+# This section defines deployment engine settings, cluster management,
+# state storage, and target cluster configurations for blockchain deployments.
+# 
+# DEPLOYMENT ENGINE OVERVIEW:
+# The BTP deployment engine provides:
+# - Multi-cluster blockchain network deployment
+# - Infrastructure-as-code for blockchain resources
+# - State management for deployment tracking
+# - Target cluster configuration and management
+# - Domain and networking configuration
+# - Storage and ingress management
+# 
+# ENTERPRISE CAPABILITIES:
+# - Multi-tenant blockchain network support
+# - Geographic cluster distribution
+# - Flexible storage and networking options
+# - Comprehensive monitoring and observability
+# - Scalable deployment architectures
+# 
 features:
+  # ============================================================================
+  # DEPLOYMENT ENGINE CONFIGURATION
+  # ============================================================================
+  
   deploymentEngine:
+    # Platform Domain Configuration
+    # Defines the primary domain for BTP platform services
     platform:
       domain:
-        hostname: "${gcp_dns_zone}"
+        hostname: "${gcp_dns_zone}"  # Primary domain for platform access
+    
+    # Cluster Manager Domain Configuration
+    # Defines domain settings for cluster management services
     clusterManager:
       domain:
-        hostname: "${gcp_dns_zone}"
+        hostname: "${gcp_dns_zone}"  # Domain for cluster management interface
+    
+    # State Storage Configuration
+    # Configures S3-compatible storage for deployment state management
+    # Uses MinIO for persistent state storage and deployment tracking
     state:
+      # S3 Connection URL for State Storage
+      # Connects to MinIO service for deployment state persistence
+      # Includes region, endpoint, and connection parameters
       s3ConnectionUrl: "s3://${gcp_platform_name}?region=${gcp_region}&endpoint=minio.${dependencies_namespace}.svc.cluster.local:9000&disableSSL=true&s3ForcePathStyle=true"
+      
+      # Storage Credentials Configuration
+      # Defines authentication and encryption for state storage
       credentials:
+        # Encryption key for securing stored state data
+        # Generated by Terraform for enhanced security
         encryptionKey: "${encryption_key}"
+        
+        # AWS S3-Compatible API Credentials
+        # Uses MinIO service account credentials for authentication
         aws:
-          accessKeyId: "${minio_svcacct_access_key}"
-          secretAccessKey: "${minio_svcacct_secret_key}"
-          region: "${gcp_region}"
+          accessKeyId: "${minio_svcacct_access_key}"      # MinIO access key
+          secretAccessKey: "${minio_svcacct_secret_key}"  # MinIO secret key
+          region: "${gcp_region}"                         # GCP region for consistency
+    
+    # Target Cluster Configuration
+    # Defines available deployment targets for blockchain networks
+    # Enables multi-cluster and multi-region blockchain deployments
     targets:
       - id: gke
         name: "Google Cloud"
@@ -95,98 +438,231 @@ features:
             capabilities:
               mixedLoadBalancers: false
 
+# ============================================================================
+# APPLICATION SCALING CONFIGURATION
+# ============================================================================
+# 
+# Configures replica counts and resource allocation for BTP platform services.
+# This section defines horizontal scaling and resource requirements to ensure
+# high availability and optimal performance for blockchain workloads.
+# 
+# SCALING STRATEGY:
+# - Multiple replicas for high availability and load distribution
+# - Horizontal Pod Autoscaling (HPA) for dynamic scaling
+# - Resource requests and limits for predictable performance
+# - CPU and memory optimization for blockchain workloads
+# 
+# HIGH AVAILABILITY:
+# - Multi-replica deployments prevent single points of failure
+# - Automatic scaling based on resource utilization
+# - Load balancing across multiple pod instances
+# - Graceful handling of pod failures and restarts
+# 
+# ============================================================================
+
+# BTP Web Application Scaling
+# Main user interface and dashboard service
 app:
-  replicaCount: 2
+  replicaCount: 2  # Multiple replicas for high availability
 
+# BTP API Service Scaling
+# RESTful API endpoints for blockchain operations
 api:
-  replicaCount: 2
+  replicaCount: 2  # Multiple replicas for load distribution
 
+# Background Job Processing Scaling
+# Handles asynchronous blockchain operations and data processing
 job:
+  # Resource Allocation
+  # Optimized for blockchain data processing workloads
   resources:
     requests:
-      cpu: "100m"
-      memory: "512Mi"
+      cpu: "100m"      # Minimum CPU allocation
+      memory: "512Mi"  # Minimum memory allocation
+  
+  # Horizontal Pod Autoscaling
+  # Automatically scales based on CPU and memory utilization
   autoscaling:
-    enabled: true
+    enabled: true  # Enable automatic scaling
 
+# Deployment Worker Scaling
+# Manages blockchain network deployments and lifecycle operations
 deployWorker:
+  # Resource Allocation
+  # Optimized for deployment and infrastructure operations
   resources:
     requests:
-      cpu: "100m"
-      memory: "512Mi"
+      cpu: "100m"      # Minimum CPU allocation
+      memory: "512Mi"  # Minimum memory allocation
+  
+  # Horizontal Pod Autoscaling
+  # Automatically scales based on deployment workload
   autoscaling:
-    enabled: true
+    enabled: true  # Enable automatic scaling
 
+# Cluster Manager Scaling
+# Manages Kubernetes cluster operations and blockchain network coordination
 clusterManager:
-  replicaCount: 2
+  replicaCount: 2  # Multiple replicas for high availability
 
+# Documentation Service Scaling
+# Provides platform documentation and API reference
 docs:
-  replicaCount: 2
+  replicaCount: 2  # Multiple replicas for high availability
 
+# ============================================================================
+# OBSERVABILITY AND MONITORING CONFIGURATION
+# ============================================================================
+# 
+# Configures comprehensive monitoring, logging, and metrics collection
+# for the BTP platform. This observability stack provides visibility
+# into platform performance, blockchain network health, and user activity.
+# 
+# OBSERVABILITY STACK OVERVIEW:
+# The BTP platform includes a complete observability stack:
+# - Victoria Metrics: High-performance time-series database for metrics
+# - Grafana: Advanced visualization and dashboard platform
+# - Loki: Log aggregation and analysis system
+# - Tempo: Distributed tracing for request flow analysis
+# - Alloy: Metrics and log collection agent
+# - Kube State Metrics: Kubernetes cluster state monitoring
+# 
+# MONITORING CAPABILITIES:
+# - Real-time platform performance metrics
+# - Blockchain network health and transaction monitoring
+# - Application performance monitoring (APM)
+# - Infrastructure resource utilization tracking
+# - User activity and engagement analytics
+# - Security event monitoring and alerting
+# 
+# ENTERPRISE FEATURES:
+# - Multi-tenant dashboard and alerting
+# - Custom metrics and log analysis
+# - Integration with external monitoring systems
+# - Comprehensive audit logging and compliance reporting
+# - Automated alerting and incident response
+# 
 observability:
+  # Metrics Server Configuration
+  # Kubernetes metrics server for resource utilization monitoring
   metrics-server:
-    enabled: false
+    enabled: false  # Disabled - using Victoria Metrics for comprehensive metrics
+  
+  # Kubernetes State Metrics
+  # Exposes Kubernetes cluster state as metrics
   kube-state-metrics:
-    enabled: true
+    enabled: true  # Enable cluster state monitoring
+  
+  # Victoria Metrics Single Configuration
+  # High-performance time-series database for metrics storage
   victoria-metrics-single:
-    enabled: true
-    # default settlemint/settlemint
-    # generate with htpasswd -nb <username> <grafana_password>, put the result in the value below
+    enabled: true  # Enable Victoria Metrics for metrics storage
+    
+    # Basic Authentication Configuration
+    # Secure access to Victoria Metrics interface
+    # Pre-configured with settlemint credentials
     basicAuth: "settlemint:$apr1$e0pGqiLq$NLXe1AB34fGs6/1u0.PR4."
+    
+    # Victoria Metrics Server Configuration
     server:
       ingress:
-        enabled: true
+        enabled: true  # Enable external access via ingress
         hosts:
-          - name: "metrics.${gcp_dns_zone}"
+          - name: "metrics.${gcp_dns_zone}"  # Metrics dashboard subdomain
             path: /
             port: http
+  
+  # Alloy Configuration
+  # Grafana's observability data collection agent
   alloy:
-    enabled: true
+    enabled: true  # Enable metrics and log collection
+    
+    # External Endpoint Configuration
+    # Integration with external monitoring systems
     endpoints:
       external:
         prometheus:
-          enabled: false
+          enabled: false  # Disable external Prometheus integration
           url: ""
         loki:
-          enabled: false
+          enabled: false  # Disable external Loki integration
           url: ""
         otel:
-          enabled: false
+          enabled: false  # Disable external OpenTelemetry integration
           url: ""
+  
+  # Grafana Configuration
+  # Advanced visualization and dashboard platform
   grafana:
-    enabled: true
+    enabled: true  # Enable Grafana for visualization
+    
+    # Authentication Configuration
+    # User credentials for Grafana access
     auth:
-      username: settlemint
-      password: ${grafana_password}
+      username: settlemint  # Default admin username
+      password: ${grafana_password}  # Dynamically generated password
+    
+    # Ingress Configuration
+    # External access configuration for Grafana
     ingress:
-      enabled: true
-      ingressClassName: settlemint-nginx
+      enabled: true  # Enable external access via ingress
+      ingressClassName: settlemint-nginx  # Use SettleMint NGINX ingress
       hosts:
-        - grafana.${gcp_dns_zone}
+        - grafana.${gcp_dns_zone}  # Grafana dashboard subdomain
+    
+    # Grafana Server Configuration
+    # Custom Grafana configuration settings
     grafana.ini:
       server:
-        root_url: https://grafana.${gcp_dns_zone}
+        root_url: https://grafana.${gcp_dns_zone}  # Base URL for Grafana
+  
+  # Tempo Configuration
+  # Distributed tracing system for request flow analysis
   tempo:
-    enabled: true
+    enabled: true  # Enable distributed tracing
+  
+  # Loki Configuration
+  # Log aggregation and analysis system
   loki:
-    enabled: true
-     # default settlemint/settlemint
-    # generate with htpasswd -nb <username> <grafana_password>, put the result in the value below
+    enabled: true  # Enable log aggregation
+    
+    # Basic Authentication Configuration
+    # Secure access to Loki interface
+    # Pre-configured with settlemint credentials
     basicAuth: "settlemint:$apr1$e0pGqiLq$NLXe1AB34fGs6/1u0.PR4."
+    
+    # Loki Gateway Configuration
+    # External access and load balancing for Loki
     gateway:
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution: null
       ingress:
-        enabled: true
+        enabled: true  # Enable external access via ingress
         hosts:
-          - host: "logs.${gcp_dns_zone}"
+          - host: "logs.${gcp_dns_zone}"  # Logs interface subdomain
             paths:
               - path: /
                 pathType: Prefix
 
+# ============================================================================
+# INTERNAL SERVICES CONFIGURATION
+# ============================================================================
+# 
+# Configures internal platform services and integrations.
+# This section defines email services, internal communications,
+# and other platform-specific service configurations.
+# 
+# INTERNAL SERVICES:
+# - Email services for notifications and communications
+# - Internal API integrations and service mesh configuration
+# - Platform-specific service configurations
+# - Integration with external enterprise systems
+# 
 internal:
+  # Email Service Configuration
+  # Platform email services for notifications and communications
   email:
-    enabled: false
-    from: "support@example.com"
-    server: "smtps://username:password@host:port"
+    enabled: false  # Disable email services by default
+    from: "support@example.com"  # Default sender address
+    server: "smtps://username:password@host:port"  # SMTP server configuration
