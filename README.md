@@ -1,5 +1,20 @@
 # SettleMint Blockchain Transformation Platform on Google Cloud Platform
 
+> **⚠️ IMPORTANT DISCLAIMER**
+> 
+> This repository and its deployment guides are provided for **educational and demonstration purposes only**. The configurations, scripts, and procedures contained within are designed to help you understand the SettleMint BTP platform architecture and deployment concepts.
+> 
+> **For production deployments, official support, and enterprise implementations:**
+> - Contact the **SettleMint team** directly for official deployment guides
+> - Obtain proper licensing and support agreements
+> - Use officially supported and maintained configurations
+> - Engage with SettleMint's Customer Success team for production planning
+> 
+> **Contact SettleMint:**
+> - Website: [www.settlemint.com](https://www.settlemint.com)
+> - Email: support@settlemint.com
+> - Documentation: [Developer Documentation](https://console.settlemint.com/documentation/)
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -46,129 +61,222 @@ The **SettleMint Blockchain Transformation Platform (BTP)** is an enterprise-gra
 ### High-Level GCP Architecture
 
 ```mermaid
-graph TB
-    subgraph "Google Cloud Platform"
-        subgraph "Global Services"
-            DNS[Cloud DNS<br/>- DNS Zone Management<br/>- A & Wildcard Records]
-            KMS[Cloud KMS<br/>- Key Ring<br/>- Crypto Keys<br/>- Auto-unseal]
-            IAM[Workload Identity<br/>- Service Accounts<br/>- DNS Admin Roles<br/>- KMS Permissions]
+graph TD
+    USERS[👥 Enterprise Users]
+    INTERNET[🌐 Internet]
+    REGISTRAR[📝 Domain Registrar]
+    
+    subgraph GCP["🏢 Google Cloud Platform"]
+        subgraph GLOBAL["🌍 Global Services"]
+            DNS[🌐 Cloud DNS<br/>Zone Management<br/>A & Wildcard Records]
+            KMS[🔐 Cloud KMS<br/>Key Rings<br/>Crypto Keys<br/>Auto-unseal]
+            IAM[👤 Workload Identity<br/>Service Accounts<br/>RBAC Permissions]
         end
         
-        subgraph "Regional Services - europe-west1"
-            subgraph "Google Kubernetes Engine"
-                subgraph "Ingress Layer"
-                    LB[Google Cloud<br/>Load Balancer]
-                    NGINX[NGINX Ingress<br/>Controller<br/>- SSL Termination<br/>- Path Routing]
+        subgraph REGIONAL["📍 Regional Services (europe-west1)"]
+            subgraph GKE["☸️ Google Kubernetes Engine"]
+                LB[⚖️ Cloud Load Balancer<br/>Global Distribution<br/>SSL Termination]
+                NGINX[🔀 NGINX Ingress<br/>Path Routing<br/>Rate Limiting]
+                
+                subgraph DEPS["📦 cluster-dependencies"]
+                    POSTGRES[(🗄️ PostgreSQL<br/>Primary Database)]
+                    REDIS[(⚡ Redis<br/>Cache & Sessions)]
+                    MINIO[(📁 MinIO<br/>Object Storage)]
+                    VAULT[🔒 HashiCorp Vault<br/>Secrets Management<br/>KMS Integration]
+                    CERTMGR[📜 cert-manager<br/>SSL Certificates<br/>Let's Encrypt]
                 end
                 
-                subgraph "cluster-dependencies Namespace"
-                    POSTGRES[(PostgreSQL<br/>Database)]
-                    REDIS[(Redis<br/>Cache)]
-                    MINIO[(MinIO<br/>Object Storage)]
-                    VAULT[HashiCorp Vault<br/>- Secrets Management<br/>- Auto-unseal via KMS]
-                    CERTMGR[cert-manager<br/>- SSL Certificates<br/>- Let's Encrypt]
+                subgraph PLATFORM["🚀 settlemint"]
+                    WEBAPP[💻 BTP Web UI<br/>React SPA<br/>Dashboard]
+                    API[🔌 BTP API Services<br/>Node.js Backend<br/>REST APIs]
+                    ENGINE[⚙️ Deployment Engine<br/>Blockchain<br/>Orchestration]
+                    CLUSTER[🎛️ Cluster Manager<br/>Infrastructure<br/>Control]
+                    MONITOR[📊 Observability<br/>Grafana & Prometheus<br/>Monitoring Stack]
                 end
                 
-                subgraph "settlemint Namespace"
-                    WEBAPP[BTP Web UI<br/>React SPA]
-                    API[BTP API Services<br/>Node.js Backend]
-                    ENGINE[Deployment Engine<br/>Blockchain Orchestration]
-                    CLUSTER[Cluster Manager<br/>Infrastructure Control]
-                    MONITOR[Observability Stack<br/>Grafana, Loki, Victoria Metrics]
-                end
-                
-                subgraph "deployments Namespace"
-                    ETH[Ethereum<br/>Networks]
-                    FABRIC[Hyperledger<br/>Fabric]
-                    IPFS[IPFS<br/>Nodes]
-                    CUSTOM[Custom<br/>Applications]
+                subgraph DEPLOY["🔗 deployments"]
+                    ETH[⟠ Ethereum<br/>Networks]
+                    FABRIC[🔗 Hyperledger<br/>Fabric]
+                    IPFS[🌐 IPFS<br/>Nodes]
+                    CUSTOM[🔧 Custom<br/>Applications]
                 end
             end
         end
     end
     
-    subgraph "External"
-        USERS[Enterprise Users]
-        INTERNET[Internet]
-        REGISTRAR[Domain Registrar<br/>NS Delegation]
-    end
-    
-    %% Connections
+    %% User Flow
     USERS --> INTERNET
     INTERNET --> DNS
-    INTERNET --> LB
     DNS --> LB
-    REGISTRAR -.-> DNS
     LB --> NGINX
+    REGISTRAR -.-> DNS
+    
+    %% Internal Platform Flow
     NGINX --> WEBAPP
     NGINX --> API
     NGINX --> MONITOR
     
+    %% Data Flow
     API --> POSTGRES
     API --> REDIS
     API --> VAULT
     ENGINE --> MINIO
+    
+    %% Security & Certificates
     VAULT --> KMS
     CERTMGR --> DNS
     CERTMGR --> IAM
     VAULT --> IAM
     
+    %% Blockchain Deployment Flow
     ENGINE --> ETH
     ENGINE --> FABRIC
     ENGINE --> IPFS
     ENGINE --> CUSTOM
     
-    %% Styling
-    classDef gcpService fill:#4285f4,stroke:#1a73e8,stroke-width:2px,color:#fff
-    classDef k8sService fill:#326ce5,stroke:#1a73e8,stroke-width:2px,color:#fff
-    classDef btpService fill:#ff6b35,stroke:#e55100,stroke-width:2px,color:#fff
-    classDef external fill:#34a853,stroke:#137333,stroke-width:2px,color:#fff
+    %% Styling with Colors
+    classDef gcpService fill:#4285f4,stroke:#1a73e8,stroke-width:3px,color:#fff,font-weight:bold
+    classDef k8sService fill:#326ce5,stroke:#1565c0,stroke-width:3px,color:#fff,font-weight:bold
+    classDef btpService fill:#ff6b35,stroke:#e55100,stroke-width:3px,color:#fff,font-weight:bold
+    classDef external fill:#34a853,stroke:#137333,stroke-width:3px,color:#fff,font-weight:bold
+    classDef blockchain fill:#9c27b0,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
     
     class DNS,KMS,IAM,LB gcpService
     class NGINX,POSTGRES,REDIS,MINIO,VAULT,CERTMGR k8sService
-    class WEBAPP,API,ENGINE,CLUSTER,MONITOR,ETH,FABRIC,IPFS,CUSTOM btpService
+    class WEBAPP,API,ENGINE,CLUSTER,MONITOR btpService
     class USERS,INTERNET,REGISTRAR external
+    class ETH,FABRIC,IPFS,CUSTOM blockchain
 ```
 
 ### Network Flow and Traffic Routing
 
 ```mermaid
 sequenceDiagram
-    participant U as Enterprise Users
-    participant I as Internet
-    participant D as Cloud DNS
-    participant L as GCP Load Balancer
-    participant N as NGINX Ingress
-    participant W as BTP Web UI
-    participant A as BTP API
-    participant M as Monitoring Stack
-    participant Auth as Auth Service
+    participant U as 👥 Users
+    participant I as 🌐 Internet
+    participant D as 🌐 Cloud DNS
+    participant L as ⚖️ Load Balancer
+    participant N as 🔀 NGINX Ingress
+    participant W as 💻 Web UI
+    participant A as 🔌 API Services
+    participant M as 📊 Monitoring
+    participant Auth as 🔐 Auth Service
 
-    U->>I: Access https://btp.example.com
-    I->>D: DNS Query for btp.example.com
-    D-->>I: Returns Load Balancer IP
-    I->>L: HTTPS Request to IP
-    L->>N: Forward to NGINX Ingress
+    Note over U,Auth: 🚀 BTP Platform Access Flow
     
-    Note over N: SSL Termination & Path Routing
+    U->>+I: 🌍 Access https://btp.example.com
+    I->>+D: 🔍 DNS Query for domain
+    D-->>-I: 📍 Returns Load Balancer IP
+    I->>+L: 🔒 HTTPS Request to IP
+    L->>+N: ➡️ Forward to NGINX Ingress
     
-    alt Web UI Access (/)
-        N->>W: Route to React SPA
-        W-->>N: Return Web Application
-    else API Calls (/api/*)
-        N->>A: Route to Node.js Backend
-        A-->>N: Return API Response
-    else Authentication (/auth/*)
-        N->>Auth: Route to Auth Service
-        Auth-->>N: OAuth2 Flow Response
-    else Monitoring (/grafana/*)
-        N->>M: Route to Grafana Dashboard
-        M-->>N: Return Monitoring UI
+    Note over N: 🔒 SSL Termination & 🛣️ Path Routing
+    
+    alt 💻 Web UI Access (/)
+        N->>+W: 🎨 Route to React SPA
+        W-->>-N: 📱 Return Web Application
+    else 🔌 API Calls (/api/*)
+        N->>+A: 🔗 Route to Node.js Backend
+        A-->>-N: 📊 Return API Response
+    else 🔐 Authentication (/auth/*)
+        N->>+Auth: 🔑 Route to Auth Service
+        Auth-->>-N: ✅ OAuth2 Flow Response
+    else 📊 Monitoring (/grafana/*)
+        N->>+M: 📈 Route to Grafana Dashboard
+        M-->>-N: 📊 Return Monitoring UI
     end
     
-    N-->>L: Response with proper headers
-    L-->>I: HTTPS Response
-    I-->>U: Deliver content to user
+    N-->>-L: 📤 Response with security headers
+    L-->>-I: 🔒 HTTPS Response
+    I-->>-U: 🎯 Deliver content to user
+    
+    Note over U,Auth: ✅ Secure End-to-End Communication
+```
+
+### BTP Platform Component Interaction
+
+```mermaid
+graph TD
+    subgraph USER_LAYER["👥 User Interface Layer"]
+        WEB[💻 Web Dashboard<br/>React SPA<br/>User Management]
+        MOBILE[📱 Mobile App<br/>React Native<br/>Field Operations]
+        CLI[⌨️ CLI Tools<br/>Developer APIs<br/>Automation]
+    end
+    
+    subgraph API_LAYER["🔌 API Gateway Layer"]
+        REST[🌐 REST APIs<br/>CRUD Operations<br/>Authentication]
+        GRAPHQL[📊 GraphQL<br/>Data Queries<br/>Real-time Updates]
+        WEBSOCKET[⚡ WebSocket<br/>Live Updates<br/>Notifications]
+    end
+    
+    subgraph BUSINESS_LAYER["⚙️ Business Logic Layer"]
+        AUTH[🔐 Authentication<br/>OAuth2/OIDC<br/>Role Management]
+        BLOCKCHAIN[🔗 Blockchain Service<br/>Network Management<br/>Transaction Processing]
+        CONTRACT[📋 Smart Contracts<br/>Deployment<br/>Interaction]
+        WORKFLOW[🔄 Workflow Engine<br/>Process Automation<br/>Business Rules]
+    end
+    
+    subgraph DATA_LAYER["🗄️ Data Layer"]
+        POSTGRES[(🗄️ PostgreSQL<br/>Application Data<br/>User Profiles<br/>Configurations)]
+        REDIS[(⚡ Redis<br/>Session Cache<br/>Real-time Data<br/>Message Queue)]
+        VAULT[(🔒 Vault<br/>Secrets<br/>Private Keys<br/>Certificates)]
+        STORAGE[(📁 Object Storage<br/>Files & Documents<br/>Blockchain Data<br/>Backups)]
+    end
+    
+    subgraph BLOCKCHAIN_LAYER["⟠ Blockchain Networks"]
+        ETH[⟠ Ethereum<br/>Smart Contracts<br/>DeFi Applications]
+        FABRIC[🔗 Hyperledger Fabric<br/>Private Networks<br/>Enterprise Solutions]
+        IPFS[🌐 IPFS<br/>Distributed Storage<br/>Content Addressing]
+    end
+    
+    %% User Interface Connections
+    WEB --> REST
+    WEB --> GRAPHQL
+    WEB --> WEBSOCKET
+    MOBILE --> REST
+    MOBILE --> WEBSOCKET
+    CLI --> REST
+    
+    %% API to Business Logic
+    REST --> AUTH
+    REST --> BLOCKCHAIN
+    REST --> CONTRACT
+    REST --> WORKFLOW
+    GRAPHQL --> BLOCKCHAIN
+    GRAPHQL --> CONTRACT
+    WEBSOCKET --> WORKFLOW
+    
+    %% Business Logic to Data
+    AUTH --> POSTGRES
+    AUTH --> REDIS
+    AUTH --> VAULT
+    BLOCKCHAIN --> POSTGRES
+    BLOCKCHAIN --> REDIS
+    BLOCKCHAIN --> VAULT
+    CONTRACT --> STORAGE
+    CONTRACT --> VAULT
+    WORKFLOW --> POSTGRES
+    WORKFLOW --> REDIS
+    
+    %% Business Logic to Blockchain
+    BLOCKCHAIN --> ETH
+    BLOCKCHAIN --> FABRIC
+    CONTRACT --> ETH
+    CONTRACT --> FABRIC
+    WORKFLOW --> IPFS
+    
+    %% Styling
+    classDef userLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef apiLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef businessLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef blockchainLayer fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+    
+    class WEB,MOBILE,CLI userLayer
+    class REST,GRAPHQL,WEBSOCKET apiLayer
+    class AUTH,BLOCKCHAIN,CONTRACT,WORKFLOW businessLayer
+    class POSTGRES,REDIS,VAULT,STORAGE dataLayer
+    class ETH,FABRIC,IPFS blockchainLayer
 ```
 
 ### Kubernetes Pod and Container Architecture
@@ -294,64 +402,200 @@ graph TB
 
 ```mermaid
 flowchart TD
-    START([Start Deployment]) --> ENV[Set Environment Variables]
-    ENV --> DNS_INIT[Initialize DNS Zone]
-    DNS_INIT --> DNS_APPLY[Apply DNS Configuration]
-    DNS_APPLY --> DNS_OUTPUT[Get Nameservers Output]
-    DNS_OUTPUT --> DELEGATE[Delegate Domain to GCP DNS]
-    DELEGATE --> VERIFY[Verify DNS Delegation]
+    START([🚀 Start Deployment<br/>Initialize BTP Setup])
     
-    VERIFY --> INFRA_INIT[Initialize Main Infrastructure]
-    INFRA_INIT --> GKE_CREATE[Create GKE Cluster]
-    GKE_CREATE --> NAMESPACES[Create Kubernetes Namespaces]
-    NAMESPACES --> WORKLOAD_ID[Setup Workload Identity]
+    subgraph PREP["📋 Preparation Phase"]
+        ENV[⚙️ Set Environment<br/>Variables & Credentials]
+        PREREQ[✅ Check Prerequisites<br/>APIs, Permissions, Quotas]
+    end
     
-    WORKLOAD_ID --> KMS_CREATE[Create KMS Key Ring & Key]
-    KMS_CREATE --> VAULT_SA[Create Vault Service Account]
-    VAULT_SA --> CERT_DEPLOY[Deploy cert-manager]
-    CERT_DEPLOY --> NGINX_DEPLOY[Deploy NGINX Ingress]
+    subgraph DNS_PHASE["🌐 DNS Setup Phase"]
+        DNS_INIT[🌐 Initialize DNS Zone<br/>Create Cloud DNS Zone]
+        DNS_APPLY[📝 Apply DNS Config<br/>Configure Records]
+        DNS_OUTPUT[📤 Get Nameservers<br/>Extract NS Records]
+        DELEGATE[🔗 Delegate Domain<br/>Update Registrar]
+        VERIFY[✅ Verify DNS<br/>Test Resolution]
+    end
     
-    NGINX_DEPLOY --> POSTGRES_DEPLOY[Deploy PostgreSQL]
-    POSTGRES_DEPLOY --> REDIS_DEPLOY[Deploy Redis]
-    REDIS_DEPLOY --> MINIO_DEPLOY[Deploy MinIO]
-    MINIO_DEPLOY --> VAULT_DEPLOY[Deploy Vault]
+    subgraph INFRA_PHASE["🏗️ Infrastructure Phase"]
+        GKE_CREATE[☸️ Create GKE Cluster<br/>Regional Deployment]
+        NAMESPACES[📦 Create Namespaces<br/>Dependencies & Platform]
+        WORKLOAD_ID[🔐 Setup Workload Identity<br/>Service Account Binding]
+        KMS_CREATE[🔒 Create KMS Resources<br/>Key Ring & Crypto Keys]
+    end
     
-    VAULT_DEPLOY --> VAULT_INIT[Initialize Vault]
-    VAULT_INIT --> VAULT_CONFIG[Configure Secret Engines]
-    VAULT_CONFIG --> VAULT_POLICIES[Create Vault Policies]
-    VAULT_POLICIES --> APPROLE[Setup AppRole Auth]
+    subgraph SERVICES_PHASE["🔧 Services Phase"]
+        CERT_DEPLOY[📜 Deploy cert-manager<br/>SSL Certificate Management]
+        NGINX_DEPLOY[🔀 Deploy NGINX Ingress<br/>Load Balancer Setup]
+        POSTGRES_DEPLOY[🗄️ Deploy PostgreSQL<br/>Database Setup]
+        REDIS_DEPLOY[⚡ Deploy Redis<br/>Cache Configuration]
+        MINIO_DEPLOY[📁 Deploy MinIO<br/>Object Storage]
+    end
     
-    APPROLE --> SSL_CERT[Request SSL Certificates]
-    SSL_CERT --> DNS_RECORDS[Create DNS A Records]
-    DNS_RECORDS --> BTP_DEPLOY[Deploy BTP Platform]
-    BTP_DEPLOY --> HEALTH_CHECK[Health Check All Services]
+    subgraph VAULT_PHASE["🔐 Security Phase"]
+        VAULT_DEPLOY[🔒 Deploy Vault<br/>Secrets Management]
+        VAULT_INIT[🔑 Initialize Vault<br/>Generate Keys]
+        VAULT_CONFIG[⚙️ Configure Vault<br/>Secret Engines]
+        VAULT_POLICIES[📋 Create Policies<br/>Access Control]
+        APPROLE[🎭 Setup AppRole<br/>Authentication]
+    end
     
-    HEALTH_CHECK --> READY{All Services Ready?}
-    READY -->|No| TROUBLESHOOT[Troubleshoot Issues]
+    subgraph PLATFORM_PHASE["🚀 Platform Phase"]
+        SSL_CERT[📜 Request SSL Certs<br/>Let's Encrypt]
+        DNS_RECORDS[📍 Create DNS Records<br/>A Records for Services]
+        BTP_DEPLOY[🚀 Deploy BTP Platform<br/>Application Stack]
+        HEALTH_CHECK[🏥 Health Check<br/>All Services]
+    end
+    
+    subgraph COMPLETION["✅ Completion"]
+        READY{🔍 All Services<br/>Ready?}
+        TROUBLESHOOT[🔧 Troubleshoot<br/>Issues]
+        COMPLETE([🎉 Deployment<br/>Complete!])
+    end
+    
+    %% Flow connections
+    START --> ENV
+    ENV --> PREREQ
+    PREREQ --> DNS_INIT
+    
+    DNS_INIT --> DNS_APPLY
+    DNS_APPLY --> DNS_OUTPUT
+    DNS_OUTPUT --> DELEGATE
+    DELEGATE --> VERIFY
+    
+    VERIFY --> GKE_CREATE
+    GKE_CREATE --> NAMESPACES
+    NAMESPACES --> WORKLOAD_ID
+    WORKLOAD_ID --> KMS_CREATE
+    
+    KMS_CREATE --> CERT_DEPLOY
+    CERT_DEPLOY --> NGINX_DEPLOY
+    NGINX_DEPLOY --> POSTGRES_DEPLOY
+    POSTGRES_DEPLOY --> REDIS_DEPLOY
+    REDIS_DEPLOY --> MINIO_DEPLOY
+    
+    MINIO_DEPLOY --> VAULT_DEPLOY
+    VAULT_DEPLOY --> VAULT_INIT
+    VAULT_INIT --> VAULT_CONFIG
+    VAULT_CONFIG --> VAULT_POLICIES
+    VAULT_POLICIES --> APPROLE
+    
+    APPROLE --> SSL_CERT
+    SSL_CERT --> DNS_RECORDS
+    DNS_RECORDS --> BTP_DEPLOY
+    BTP_DEPLOY --> HEALTH_CHECK
+    
+    HEALTH_CHECK --> READY
+    READY -->|❌ No| TROUBLESHOOT
     TROUBLESHOOT --> HEALTH_CHECK
-    READY -->|Yes| COMPLETE([Deployment Complete])
+    READY -->|✅ Yes| COMPLETE
     
-    %% Error handling
-    DNS_INIT --> DNS_ERROR{DNS Error?}
-    DNS_ERROR -->|Yes| DNS_TROUBLESHOOT[Check API Permissions]
-    DNS_ERROR -->|No| DNS_APPLY
-    DNS_TROUBLESHOOT --> DNS_INIT
-    
-    GKE_CREATE --> GKE_ERROR{GKE Error?}
-    GKE_ERROR -->|Yes| GKE_TROUBLESHOOT[Check Quotas & Permissions]
-    GKE_ERROR -->|No| NAMESPACES
-    GKE_TROUBLESHOOT --> GKE_CREATE
-    
-    %% Styling
-    classDef startEnd fill:#4caf50,stroke:#2e7d32,stroke-width:3px,color:#fff
-    classDef process fill:#2196f3,stroke:#1565c0,stroke-width:2px,color:#fff
-    classDef decision fill:#ff9800,stroke:#f57c00,stroke-width:2px,color:#fff
-    classDef error fill:#f44336,stroke:#c62828,stroke-width:2px,color:#fff
+    %% Styling with colors
+    classDef startEnd fill:#4caf50,stroke:#2e7d32,stroke-width:3px,color:#fff,font-weight:bold
+    classDef prep fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000,font-weight:bold
+    classDef dns fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000,font-weight:bold
+    classDef infra fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000,font-weight:bold
+    classDef services fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000,font-weight:bold
+    classDef security fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000,font-weight:bold
+    classDef platform fill:#fff8e1,stroke:#fbc02d,stroke-width:2px,color:#000,font-weight:bold
+    classDef decision fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#000,font-weight:bold
+    classDef error fill:#ffcdd2,stroke:#f44336,stroke-width:2px,color:#000,font-weight:bold
     
     class START,COMPLETE startEnd
-    class ENV,DNS_INIT,DNS_APPLY,DNS_OUTPUT,DELEGATE,VERIFY,INFRA_INIT,GKE_CREATE,NAMESPACES,WORKLOAD_ID,KMS_CREATE,VAULT_SA,CERT_DEPLOY,NGINX_DEPLOY,POSTGRES_DEPLOY,REDIS_DEPLOY,MINIO_DEPLOY,VAULT_DEPLOY,VAULT_INIT,VAULT_CONFIG,VAULT_POLICIES,APPROLE,SSL_CERT,DNS_RECORDS,BTP_DEPLOY,HEALTH_CHECK process
-    class READY,DNS_ERROR,GKE_ERROR decision
-    class TROUBLESHOOT,DNS_TROUBLESHOOT,GKE_TROUBLESHOOT error
+    class ENV,PREREQ prep
+    class DNS_INIT,DNS_APPLY,DNS_OUTPUT,DELEGATE,VERIFY dns
+    class GKE_CREATE,NAMESPACES,WORKLOAD_ID,KMS_CREATE infra
+    class CERT_DEPLOY,NGINX_DEPLOY,POSTGRES_DEPLOY,REDIS_DEPLOY,MINIO_DEPLOY services
+    class VAULT_DEPLOY,VAULT_INIT,VAULT_CONFIG,VAULT_POLICIES,APPROLE security
+    class SSL_CERT,DNS_RECORDS,BTP_DEPLOY,HEALTH_CHECK platform
+    class READY decision
+    class TROUBLESHOOT error
+```
+
+### Security Architecture Deep Dive
+
+```mermaid
+graph TD
+    subgraph EXTERNAL["🌐 External Layer"]
+        USERS[👥 End Users<br/>Web Browsers<br/>Mobile Apps]
+        ADMIN[👨‍💼 Administrators<br/>DevOps Team<br/>Support Staff]
+        APIS[🔌 External APIs<br/>Third-party Services<br/>Webhooks]
+    end
+    
+    subgraph SECURITY_PERIMETER["🛡️ Security Perimeter"]
+        WAF[🛡️ Web Application Firewall<br/>DDoS Protection<br/>Rate Limiting<br/>Bot Detection]
+        LB[⚖️ Load Balancer<br/>SSL Termination<br/>Health Checks<br/>Traffic Distribution]
+        FIREWALL[🔥 Network Firewall<br/>IP Whitelisting<br/>Port Restrictions<br/>Protocol Filtering]
+    end
+    
+    subgraph AUTH_LAYER["🔐 Authentication Layer"]
+        OAUTH[🎫 OAuth 2.0/OIDC<br/>Google Workspace<br/>Azure AD<br/>Custom Providers]
+        MFA[📱 Multi-Factor Auth<br/>TOTP/SMS<br/>Hardware Tokens<br/>Biometric]
+        SESSION[🎪 Session Management<br/>JWT Tokens<br/>Refresh Tokens<br/>Session Store]
+    end
+    
+    subgraph AUTHORIZATION_LAYER["👮 Authorization Layer"]
+        RBAC[👥 Role-Based Access<br/>User Roles<br/>Permissions<br/>Resource Access]
+        POLICY[📋 Policy Engine<br/>Attribute-Based<br/>Dynamic Rules<br/>Context Aware]
+        AUDIT[📊 Audit Logging<br/>Access Logs<br/>Change Tracking<br/>Compliance]
+    end
+    
+    subgraph SECRETS_LAYER["🔒 Secrets Management"]
+        VAULT_CORE[🔐 HashiCorp Vault<br/>Secret Storage<br/>Dynamic Secrets<br/>Encryption Transit]
+        KMS[🗝️ Cloud KMS<br/>Key Management<br/>Hardware Security<br/>Auto-rotation]
+        CERT_MGR[📜 Certificate Manager<br/>SSL/TLS Certs<br/>Auto-renewal<br/>CA Integration]
+    end
+    
+    subgraph DATA_PROTECTION["🛡️ Data Protection"]
+        ENCRYPTION[🔐 Encryption at Rest<br/>Database Encryption<br/>File System Encryption<br/>Backup Encryption]
+        NETWORK_SEC[🌐 Network Security<br/>VPC Isolation<br/>Private Subnets<br/>Service Mesh]
+        MONITORING[👁️ Security Monitoring<br/>Intrusion Detection<br/>Anomaly Detection<br/>Threat Intelligence]
+    end
+    
+    %% External to Security Perimeter
+    USERS --> WAF
+    ADMIN --> WAF
+    APIS --> FIREWALL
+    
+    %% Security Perimeter Flow
+    WAF --> LB
+    LB --> FIREWALL
+    FIREWALL --> OAUTH
+    
+    %% Authentication Flow
+    OAUTH --> MFA
+    MFA --> SESSION
+    SESSION --> RBAC
+    
+    %% Authorization Flow
+    RBAC --> POLICY
+    POLICY --> AUDIT
+    AUDIT --> VAULT_CORE
+    
+    %% Secrets Management
+    VAULT_CORE --> KMS
+    KMS --> CERT_MGR
+    CERT_MGR --> ENCRYPTION
+    
+    %% Data Protection
+    ENCRYPTION --> NETWORK_SEC
+    NETWORK_SEC --> MONITORING
+    MONITORING --> AUDIT
+    
+    %% Styling
+    classDef external fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#000
+    classDef perimeter fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#000
+    classDef auth fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
+    classDef authz fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    classDef secrets fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef protection fill:#e3f2fd,stroke:#0277bd,stroke-width:2px,color:#000
+    
+    class USERS,ADMIN,APIS external
+    class WAF,LB,FIREWALL perimeter
+    class OAUTH,MFA,SESSION auth
+    class RBAC,POLICY,AUDIT authz
+    class VAULT_CORE,KMS,CERT_MGR secrets
+    class ENCRYPTION,NETWORK_SEC,MONITORING protection
 ```
 
 ## Prerequisites
@@ -1278,3 +1522,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ---
 
 **Disclaimer**: This deployment is optimized for demonstration and development environments. For production deployments, engage with SettleMint's Customer Success team for proper sizing, security hardening, and compliance requirements.
+

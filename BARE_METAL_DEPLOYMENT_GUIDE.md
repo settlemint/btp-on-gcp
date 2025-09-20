@@ -17,6 +17,15 @@
 
 ## Overview
 
+> **⚠️ IMPORTANT DISCLAIMER**
+> 
+> This guide is provided for **educational and demonstration purposes only**. For production deployments, official support, and enterprise implementations, please contact the **SettleMint team** directly.
+> 
+> **Contact SettleMint:**
+> - Website: [www.settlemint.com](https://www.settlemint.com)
+> - Email: support@settlemint.com
+> - Documentation: [docs.settlemint.com](https://docs.settlemint.com)
+
 This guide provides comprehensive instructions for deploying **SettleMint's Blockchain Transformation Platform (BTP)** on bare metal infrastructure without any managed cloud services. This approach offers maximum control, customization, and data sovereignty while requiring complete infrastructure management.
 
 ### Key Benefits of Bare Metal Deployment
@@ -44,30 +53,67 @@ This guide provides comprehensive instructions for deploying **SettleMint's Bloc
 ### Option 1: Single Server Deployment (Minimal)
 
 ```mermaid
-graph TB
-    subgraph "Single Server (32GB RAM, 8 CPU)"
-        subgraph "Docker Containers"
-            BTP[BTP Platform<br/>- Web UI<br/>- API Services<br/>- Engine]
-            POSTGRES[PostgreSQL<br/>Database]
-            REDIS[Redis Cache]
-            VAULT[HashiCorp Vault]
-            NGINX[NGINX Proxy]
-            MONITORING[Prometheus<br/>Grafana]
+graph TD
+    USERS[👥 Users<br/>Web Browser<br/>Mobile App]
+    
+    subgraph SERVER["🖥️ Single Server (32GB RAM, 8 CPU)"]
+        NGINX[🔀 NGINX Proxy<br/>SSL Termination<br/>Load Balancing<br/>Rate Limiting]
+        
+        subgraph CONTAINERS["🐳 Docker Containers"]
+            BTP[🚀 BTP Platform<br/>Web UI<br/>API Services<br/>Deployment Engine]
+            POSTGRES[🗄️ PostgreSQL<br/>Primary Database<br/>ACID Compliance<br/>Backup & Recovery]
+            REDIS[⚡ Redis Cache<br/>Session Storage<br/>Real-time Data<br/>Message Queue]
+            VAULT[🔒 HashiCorp Vault<br/>Secrets Management<br/>Encryption Keys<br/>Policy Engine]
+            MONITORING[📊 Monitoring Stack<br/>Prometheus<br/>Grafana<br/>Alertmanager]
         end
         
-        subgraph "Storage"
-            DATA[Data Volume<br/>500GB SSD]
-            BACKUP[Backup Volume<br/>1TB HDD]
+        subgraph STORAGE["💾 Storage Layer"]
+            DATA[📁 Data Volume<br/>500GB NVMe SSD<br/>Application Data<br/>Database Files]
+            BACKUP[💾 Backup Volume<br/>1TB SATA HDD<br/>Automated Backups<br/>Archive Storage]
+            LOGS[📋 Log Volume<br/>100GB SSD<br/>Application Logs<br/>Audit Trails]
         end
     end
     
-    USERS[Users] --> NGINX
+    %% User Flow
+    USERS --> NGINX
     NGINX --> BTP
+    
+    %% Application Flow
     BTP --> POSTGRES
     BTP --> REDIS
     BTP --> VAULT
-    BTP --> DATA
+    
+    %% Storage Flow
+    POSTGRES --> DATA
+    REDIS --> DATA
+    VAULT --> DATA
+    BTP --> LOGS
     MONITORING --> BACKUP
+    
+    %% Monitoring Flow
+    MONITORING --> POSTGRES
+    MONITORING --> REDIS
+    MONITORING --> VAULT
+    MONITORING --> BTP
+    
+    %% Styling
+    classDef user fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#000,font-weight:bold
+    classDef proxy fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
+    classDef application fill:#ff6b35,stroke:#e55100,stroke-width:3px,color:#fff,font-weight:bold
+    classDef database fill:#4caf50,stroke:#2e7d32,stroke-width:3px,color:#fff,font-weight:bold
+    classDef cache fill:#ff9800,stroke:#f57c00,stroke-width:3px,color:#fff,font-weight:bold
+    classDef security fill:#9c27b0,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
+    classDef monitoring fill:#00bcd4,stroke:#0097a7,stroke-width:3px,color:#fff,font-weight:bold
+    classDef storage fill:#795548,stroke:#5d4037,stroke-width:3px,color:#fff,font-weight:bold
+    
+    class USERS user
+    class NGINX proxy
+    class BTP application
+    class POSTGRES database
+    class REDIS cache
+    class VAULT security
+    class MONITORING monitoring
+    class DATA,BACKUP,LOGS storage
 ```
 
 **Specifications:**

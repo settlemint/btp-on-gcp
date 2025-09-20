@@ -15,6 +15,15 @@
 
 ## Overview
 
+> **⚠️ IMPORTANT DISCLAIMER**
+> 
+> This guide is provided for **educational and demonstration purposes only**. For production deployments, official support, and enterprise implementations, please contact the **SettleMint team** directly.
+> 
+> **Contact SettleMint:**
+> - Website: [www.settlemint.com](https://www.settlemint.com)
+> - Email: support@settlemint.com
+> - Documentation: [docs.settlemint.com](https://docs.settlemint.com)
+
 This guide provides a comprehensive deployment strategy for **SettleMint's Blockchain Transformation Platform (BTP)** on **Microsoft Azure**. This implementation leverages Azure's managed services and enterprise-grade infrastructure to provide a robust, scalable blockchain platform deployment.
 
 ### Key Capabilities
@@ -49,8 +58,109 @@ This guide provides a comprehensive deployment strategy for **SettleMint's Block
 ### High-Level Azure Architecture
 
 ```mermaid
+graph TD
+    USERS[👥 Enterprise Users]
+    INTERNET[🌐 Internet]
+    REGISTRAR[📝 Domain Registrar]
+    
+    subgraph AZURE["☁️ Microsoft Azure"]
+        subgraph GLOBAL["🌍 Global Services"]
+            DNS[🌐 Azure DNS<br/>Public & Private Zones<br/>Traffic Manager<br/>Health Probes]
+            KV[🔐 Azure Key Vault<br/>Secrets & Keys<br/>Managed HSM<br/>Certificate Management]
+            AAD[👤 Azure AD<br/>Managed Identity<br/>RBAC<br/>Conditional Access]
+            ACR[📦 Azure ACR<br/>Container Registry<br/>Geo-replication<br/>Vulnerability Scanning]
+        end
+        
+        subgraph REGIONAL["📍 Regional Services (West Europe)"]
+            subgraph AKS["☸️ Azure Kubernetes Service"]
+                APPGW[⚖️ Application Gateway<br/>SSL Termination<br/>WAF v2<br/>Path Routing]
+                NGINX[🔀 NGINX Ingress<br/>Advanced Routing<br/>Rate Limiting<br/>SSL Passthrough]
+                
+                subgraph DEPS["📦 cluster-dependencies"]
+                    POSTGRES[(🗄️ Azure Database<br/>PostgreSQL<br/>Flexible Server<br/>High Availability)]
+                    REDIS[(⚡ Azure Cache<br/>Redis Premium<br/>Clustering<br/>Persistence)]
+                    STORAGE[(📁 Azure Blob Storage<br/>Hot/Cool/Archive<br/>Lifecycle Management<br/>Geo-redundancy)]
+                    VAULT[🔒 HashiCorp Vault<br/>Key Vault Integration<br/>Managed Identity<br/>Policy Engine]
+                    CERTMGR[📜 cert-manager<br/>SSL Certificates<br/>Let's Encrypt<br/>Azure DNS01]
+                end
+                
+                subgraph PLATFORM["🚀 settlemint"]
+                    WEBAPP[💻 BTP Web UI<br/>React SPA<br/>Azure CDN<br/>Static Web Apps]
+                    API[🔌 BTP API Services<br/>Node.js Backend<br/>Auto Scaling<br/>Health Probes]
+                    ENGINE[⚙️ Deployment Engine<br/>Blockchain Orchestration<br/>Spot Instances<br/>GPU Nodes]
+                    CLUSTER[🎛️ Cluster Manager<br/>Infrastructure Control<br/>AKS Integration<br/>Container Instances]
+                    MONITOR[📊 Observability<br/>Grafana & Prometheus<br/>Azure Monitor<br/>App Insights]
+                end
+                
+                subgraph DEPLOY["🔗 deployments"]
+                    ETH[⟠ Ethereum<br/>Networks<br/>Premium SSD<br/>Ultra Disk]
+                    FABRIC[🔗 Hyperledger Fabric<br/>Private Networks<br/>Azure Files<br/>Key Vault Certs]
+                    IPFS[🌐 IPFS Nodes<br/>Distributed Storage<br/>Blob Storage<br/>CDN Integration]
+                    CUSTOM[🔧 Custom Apps<br/>Logic Apps<br/>Azure Functions<br/>Event Grid]
+                end
+            end
+            
+            subgraph MANAGED["🛠️ Platform Services"]
+                MONITOR_SVC[📊 Azure Monitor<br/>Metrics & Logs<br/>Alerts & Dashboards<br/>Log Analytics]
+                APPINSIGHTS[🔍 Application Insights<br/>APM & Tracing<br/>Dependency Mapping<br/>Live Metrics]
+                SECURITY[🛡️ Security Center<br/>Threat Protection<br/>Compliance Dashboard<br/>Recommendations]
+            end
+        end
+    end
+    
+    %% User Flow
+    USERS --> INTERNET
+    INTERNET --> DNS
+    DNS --> APPGW
+    APPGW --> NGINX
+    REGISTRAR -.-> DNS
+    
+    %% Platform Flow
+    NGINX --> WEBAPP
+    NGINX --> API
+    NGINX --> MONITOR
+    
+    %% Data Flow
+    API --> POSTGRES
+    API --> REDIS
+    API --> VAULT
+    ENGINE --> STORAGE
+    
+    %% Security Flow
+    VAULT --> KV
+    CERTMGR --> DNS
+    CERTMGR --> AAD
+    VAULT --> AAD
+    
+    %% Blockchain Flow
+    ENGINE --> ETH
+    ENGINE --> FABRIC
+    ENGINE --> IPFS
+    ENGINE --> CUSTOM
+    
+    %% Monitoring Flow
+    MONITOR --> MONITOR_SVC
+    MONITOR --> APPINSIGHTS
+    MONITOR --> SECURITY
+    
+    %% Styling with Azure Colors
+    classDef azureService fill:#0078d4,stroke:#005a9e,stroke-width:3px,color:#fff,font-weight:bold
+    classDef k8sService fill:#326ce5,stroke:#1565c0,stroke-width:3px,color:#fff,font-weight:bold
+    classDef btpService fill:#ff6b35,stroke:#e55100,stroke-width:3px,color:#fff,font-weight:bold
+    classDef external fill:#34a853,stroke:#137333,stroke-width:3px,color:#fff,font-weight:bold
+    classDef blockchain fill:#9c27b0,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
+    
+    class DNS,KV,AAD,ACR,APPGW,POSTGRES,REDIS,STORAGE,MONITOR_SVC,APPINSIGHTS,SECURITY azureService
+    class NGINX,VAULT,CERTMGR k8sService
+    class WEBAPP,API,ENGINE,CLUSTER,MONITOR btpService
+    class USERS,INTERNET,REGISTRAR external
+    class ETH,FABRIC,IPFS,CUSTOM blockchain
+```
+
+### Azure Cost Management Architecture
+
+```mermaid
 graph TB
-    subgraph "Microsoft Azure"
         subgraph "Global Services"
             DNS[Azure DNS<br/>- DNS Zone Management<br/>- A & CNAME Records<br/>- Traffic Manager]
             KV[Azure Key Vault<br/>- Secrets & Keys<br/>- Managed HSM<br/>- Certificate Management]

@@ -15,6 +15,15 @@
 
 ## Overview
 
+> **⚠️ IMPORTANT DISCLAIMER**
+> 
+> This guide is provided for **educational and demonstration purposes only**. For production deployments, official support, and enterprise implementations, please contact the **SettleMint team** directly.
+> 
+> **Contact SettleMint:**
+> - Website: [www.settlemint.com](https://www.settlemint.com)
+> - Email: support@settlemint.com
+> - Documentation: [docs.settlemint.com](https://docs.settlemint.com)
+
 This guide provides a comprehensive deployment strategy for **SettleMint's Blockchain Transformation Platform (BTP)** on **Google Cloud Platform (GCP)**. This implementation leverages Google Cloud's managed services and enterprise-grade infrastructure to provide a robust, scalable blockchain platform deployment.
 
 ### Key Capabilities

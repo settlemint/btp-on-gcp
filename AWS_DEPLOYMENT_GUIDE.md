@@ -15,6 +15,15 @@
 
 ## Overview
 
+> **⚠️ IMPORTANT DISCLAIMER**
+> 
+> This guide is provided for **educational and demonstration purposes only**. For production deployments, official support, and enterprise implementations, please contact the **SettleMint team** directly.
+> 
+> **Contact SettleMint:**
+> - Website: [www.settlemint.com](https://www.settlemint.com)
+> - Email: support@settlemint.com
+> - Documentation: [docs.settlemint.com](https://docs.settlemint.com)
+
 This guide provides a comprehensive deployment strategy for **SettleMint's Blockchain Transformation Platform (BTP)** on **Amazon Web Services (AWS)**. This implementation leverages AWS's managed services and enterprise-grade infrastructure to provide a robust, scalable blockchain platform deployment.
 
 ### Key Capabilities
@@ -48,99 +57,176 @@ This guide provides a comprehensive deployment strategy for **SettleMint's Block
 ### High-Level AWS Architecture
 
 ```mermaid
-graph TB
-    subgraph "Amazon Web Services"
-        subgraph "Global Services"
-            R53[Route 53<br/>- Hosted Zone Management<br/>- A & CNAME Records<br/>- Health Checks]
-            KMS[AWS KMS<br/>- Customer Managed Keys<br/>- Auto-rotation<br/>- HSM Integration]
-            IAM[IAM + IRSA<br/>- Service Accounts<br/>- Route 53 Permissions<br/>- KMS Access]
-            ECR[Amazon ECR<br/>- Private Registries<br/>- Vulnerability Scanning<br/>- Image Lifecycle]
+graph TD
+    USERS[👥 Enterprise Users]
+    INTERNET[🌐 Internet]
+    REGISTRAR[📝 Domain Registrar]
+    
+    subgraph AWS["☁️ Amazon Web Services"]
+        subgraph GLOBAL["🌍 Global Services"]
+            R53[🌐 Route 53<br/>Hosted Zones<br/>Health Checks<br/>DNS Management]
+            KMS[🔐 AWS KMS<br/>Customer Keys<br/>HSM Integration<br/>Auto-rotation]
+            IAM[👤 IAM + IRSA<br/>Service Accounts<br/>Role-based Access<br/>Policy Management]
+            ECR[📦 Amazon ECR<br/>Private Registries<br/>Vulnerability Scanning<br/>Image Lifecycle]
         end
         
-        subgraph "Regional Services - us-west-2"
-            subgraph "Amazon EKS Cluster"
-                subgraph "Ingress Layer"
-                    ALB[Application Load<br/>Balancer<br/>- SSL Termination<br/>- Path Routing<br/>- WAF Integration]
-                    NGINX[NGINX Ingress<br/>Controller<br/>- Advanced Routing<br/>- Rate Limiting]
+        subgraph REGIONAL["📍 Regional Services (us-west-2)"]
+            subgraph EKS["☸️ Amazon EKS Cluster"]
+                ALB[⚖️ Application LB<br/>SSL Termination<br/>WAF Integration<br/>Path Routing]
+                NGINX[🔀 NGINX Ingress<br/>Advanced Routing<br/>Rate Limiting<br/>SSL Passthrough]
+                
+                subgraph DEPS["📦 cluster-dependencies"]
+                    RDS[(🗄️ Amazon RDS<br/>PostgreSQL<br/>Multi-AZ HA<br/>Automated Backups)]
+                    ELASTICACHE[(⚡ ElastiCache<br/>Redis Cluster<br/>Encryption<br/>Failover)]
+                    S3[(📁 Amazon S3<br/>Object Storage<br/>Versioning<br/>Lifecycle Policies)]
+                    VAULT[🔒 HashiCorp Vault<br/>KMS Auto-unseal<br/>Secrets Management<br/>Policy Engine]
+                    CERTMGR[📜 cert-manager<br/>SSL Certificates<br/>Let's Encrypt<br/>Route 53 DNS01]
                 end
                 
-                subgraph "cluster-dependencies Namespace"
-                    RDS[(Amazon RDS<br/>PostgreSQL<br/>- Multi-AZ<br/>- Automated Backups)]
-                    ELASTICACHE[(Amazon ElastiCache<br/>Redis<br/>- Cluster Mode<br/>- Encryption)]
-                    S3[(Amazon S3<br/>Object Storage<br/>- Versioning<br/>- Lifecycle)]
-                    VAULT[HashiCorp Vault<br/>- AWS KMS Auto-unseal<br/>- Secrets Management]
-                    CERTMGR[cert-manager<br/>- SSL Certificates<br/>- Let's Encrypt<br/>- Route 53 DNS01]
+                subgraph PLATFORM["🚀 settlemint"]
+                    WEBAPP[💻 BTP Web UI<br/>React SPA<br/>CloudFront CDN<br/>S3 Static Hosting]
+                    API[🔌 BTP API Services<br/>Node.js Backend<br/>Auto Scaling<br/>Health Checks]
+                    ENGINE[⚙️ Deployment Engine<br/>Blockchain Orchestration<br/>Spot Instances<br/>GPU Support]
+                    CLUSTER[🎛️ Cluster Manager<br/>Infrastructure Control<br/>EKS Integration<br/>Fargate Support]
+                    MONITOR[📊 Observability<br/>Grafana & Prometheus<br/>CloudWatch Integration<br/>X-Ray Tracing]
                 end
                 
-                subgraph "settlemint Namespace"
-                    WEBAPP[BTP Web UI<br/>React SPA<br/>- CloudFront CDN<br/>- S3 Static Hosting]
-                    API[BTP API Services<br/>Node.js Backend<br/>- Auto Scaling<br/>- Health Checks]
-                    ENGINE[Deployment Engine<br/>Blockchain Orchestration<br/>- Spot Instances<br/>- GPU Support]
-                    CLUSTER[Cluster Manager<br/>Infrastructure Control<br/>- EKS Integration<br/>- Fargate Support]
-                    MONITOR[Observability Stack<br/>Grafana, Prometheus<br/>- CloudWatch Integration<br/>- X-Ray Tracing]
-                end
-                
-                subgraph "deployments Namespace"
-                    ETH[Ethereum<br/>Networks<br/>- EBS Volumes<br/>- Instance Store]
-                    FABRIC[Hyperledger<br/>Fabric<br/>- EFS Storage<br/>- Certificate Manager]
-                    IPFS[IPFS<br/>Nodes<br/>- S3 Gateway<br/>- CloudFront CDN]
-                    CUSTOM[Custom<br/>Applications<br/>- Lambda Functions<br/>- Step Functions]
+                subgraph DEPLOY["🔗 deployments"]
+                    ETH[⟠ Ethereum<br/>Networks<br/>EBS Volumes<br/>Instance Store]
+                    FABRIC[🔗 Hyperledger Fabric<br/>Private Networks<br/>EFS Storage<br/>Certificate Manager]
+                    IPFS[🌐 IPFS Nodes<br/>Distributed Storage<br/>S3 Gateway<br/>CloudFront CDN]
+                    CUSTOM[🔧 Custom Apps<br/>Lambda Functions<br/>Step Functions<br/>Event Bridge]
                 end
             end
             
-            subgraph "Managed Services"
-                SECRETSMANAGER[AWS Secrets Manager<br/>- Automatic Rotation<br/>- Lambda Integration<br/>- Cross-Region Replication]
-                CLOUDWATCH[Amazon CloudWatch<br/>- Metrics & Logs<br/>- Alarms & Dashboards<br/>- X-Ray Integration]
-                XRAY[AWS X-Ray<br/>- Distributed Tracing<br/>- Service Map<br/>- Performance Insights]
+            subgraph MANAGED["🛠️ Managed Services"]
+                SECRETSMANAGER[🔐 Secrets Manager<br/>Auto Rotation<br/>Lambda Integration<br/>Cross-Region Sync]
+                CLOUDWATCH[📊 CloudWatch<br/>Metrics & Logs<br/>Alarms & Dashboards<br/>Insights]
+                XRAY[🔍 AWS X-Ray<br/>Distributed Tracing<br/>Service Maps<br/>Performance Analysis]
             end
         end
     end
     
-    subgraph "External"
-        USERS[Enterprise Users]
-        INTERNET[Internet]
-        REGISTRAR[Domain Registrar<br/>NS Delegation]
-    end
-    
-    %% Connections
+    %% User Flow
     USERS --> INTERNET
     INTERNET --> R53
-    INTERNET --> ALB
     R53 --> ALB
-    REGISTRAR -.-> R53
     ALB --> NGINX
+    REGISTRAR -.-> R53
+    
+    %% Platform Flow
     NGINX --> WEBAPP
     NGINX --> API
     NGINX --> MONITOR
     
+    %% Data Flow
     API --> RDS
     API --> ELASTICACHE
     API --> VAULT
     API --> SECRETSMANAGER
     ENGINE --> S3
+    
+    %% Security Flow
     VAULT --> KMS
     CERTMGR --> R53
     CERTMGR --> IAM
     VAULT --> IAM
     
+    %% Blockchain Flow
     ENGINE --> ETH
     ENGINE --> FABRIC
     ENGINE --> IPFS
     ENGINE --> CUSTOM
     
+    %% Monitoring Flow
     MONITOR --> CLOUDWATCH
     MONITOR --> XRAY
     
-    %% Styling
-    classDef awsService fill:#FF9900,stroke:#FF6600,stroke-width:2px,color:#fff
-    classDef k8sService fill:#326ce5,stroke:#1a73e8,stroke-width:2px,color:#fff
-    classDef btpService fill:#ff6b35,stroke:#e55100,stroke-width:2px,color:#fff
-    classDef external fill:#34a853,stroke:#137333,stroke-width:2px,color:#fff
+    %% Styling with AWS Colors
+    classDef awsService fill:#FF9900,stroke:#FF6600,stroke-width:3px,color:#fff,font-weight:bold
+    classDef k8sService fill:#326ce5,stroke:#1565c0,stroke-width:3px,color:#fff,font-weight:bold
+    classDef btpService fill:#ff6b35,stroke:#e55100,stroke-width:3px,color:#fff,font-weight:bold
+    classDef external fill:#34a853,stroke:#137333,stroke-width:3px,color:#fff,font-weight:bold
+    classDef blockchain fill:#9c27b0,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
     
     class R53,KMS,IAM,ECR,ALB,RDS,ELASTICACHE,S3,SECRETSMANAGER,CLOUDWATCH,XRAY awsService
     class NGINX,VAULT,CERTMGR k8sService
-    class WEBAPP,API,ENGINE,CLUSTER,MONITOR,ETH,FABRIC,IPFS,CUSTOM btpService
+    class WEBAPP,API,ENGINE,CLUSTER,MONITOR btpService
     class USERS,INTERNET,REGISTRAR external
+    class ETH,FABRIC,IPFS,CUSTOM blockchain
+```
+
+### AWS Multi-Region Disaster Recovery Architecture
+
+```mermaid
+graph TD
+    subgraph PRIMARY["🏢 Primary Region (us-west-2)"]
+        subgraph PROD_EKS["☸️ Production EKS"]
+            PROD_ALB[⚖️ Production ALB<br/>Active Traffic<br/>Health Checks]
+            PROD_APP[🚀 BTP Application<br/>Active Workloads<br/>Real-time Processing]
+        end
+        
+        subgraph PROD_DATA["🗄️ Production Data"]
+            PROD_RDS[🗄️ RDS Primary<br/>Multi-AZ Setup<br/>Continuous Backup<br/>Cross-region Replication]
+            PROD_S3[📁 S3 Primary<br/>Cross-region Replication<br/>Versioning Enabled<br/>Lifecycle Policies]
+            PROD_REDIS[⚡ ElastiCache Primary<br/>Cluster Mode<br/>Automatic Failover<br/>Backup to S3]
+        end
+    end
+    
+    subgraph SECONDARY["🏥 Disaster Recovery Region (us-east-1)"]
+        subgraph DR_EKS["☸️ Standby EKS"]
+            DR_ALB[⚖️ Standby ALB<br/>Health Check Only<br/>Route 53 Failover]
+            DR_APP[🚀 BTP Application<br/>Warm Standby<br/>Automated Deployment]
+        end
+        
+        subgraph DR_DATA["🗄️ Disaster Recovery Data"]
+            DR_RDS[🗄️ RDS Read Replica<br/>Cross-region Replica<br/>Promotion Ready<br/>Point-in-time Recovery]
+            DR_S3[📁 S3 Replica<br/>Cross-region Sync<br/>Same Bucket Policy<br/>Lifecycle Aligned]
+            DR_REDIS[⚡ ElastiCache Standby<br/>Restore from Backup<br/>Configuration Sync<br/>Network Ready]
+        end
+    end
+    
+    subgraph MONITORING["📊 Global Monitoring"]
+        R53_HEALTH[🌐 Route 53<br/>Health Checks<br/>DNS Failover<br/>Global Traffic Management]
+        CLOUDWATCH[📊 CloudWatch<br/>Cross-region Monitoring<br/>Centralized Dashboards<br/>Unified Alerting]
+        BACKUP_AUTOMATION[🔄 Backup Automation<br/>Lambda Functions<br/>Scheduled Tasks<br/>Cross-region Sync]
+    end
+    
+    %% Primary region flow
+    PROD_ALB --> PROD_APP
+    PROD_APP --> PROD_RDS
+    PROD_APP --> PROD_S3
+    PROD_APP --> PROD_REDIS
+    
+    %% Cross-region replication
+    PROD_RDS -.->|📋 Async Replication| DR_RDS
+    PROD_S3 -.->|📁 Cross-region Sync| DR_S3
+    PROD_REDIS -.->|💾 Backup Restore| DR_REDIS
+    
+    %% Disaster recovery flow
+    DR_ALB --> DR_APP
+    DR_APP --> DR_RDS
+    DR_APP --> DR_S3
+    DR_APP --> DR_REDIS
+    
+    %% Monitoring connections
+    R53_HEALTH --> PROD_ALB
+    R53_HEALTH --> DR_ALB
+    CLOUDWATCH --> PROD_EKS
+    CLOUDWATCH --> DR_EKS
+    BACKUP_AUTOMATION --> PROD_DATA
+    BACKUP_AUTOMATION --> DR_DATA
+    
+    %% Styling
+    classDef primary fill:#4caf50,stroke:#2e7d32,stroke-width:3px,color:#fff,font-weight:bold
+    classDef secondary fill:#ff9800,stroke:#f57c00,stroke-width:3px,color:#fff,font-weight:bold
+    classDef monitoring fill:#2196f3,stroke:#1565c0,stroke-width:3px,color:#fff,font-weight:bold
+    classDef data fill:#9c27b0,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
+    
+    class PROD_ALB,PROD_APP primary
+    class DR_ALB,DR_APP secondary
+    class R53_HEALTH,CLOUDWATCH,BACKUP_AUTOMATION monitoring
+    class PROD_RDS,PROD_S3,PROD_REDIS,DR_RDS,DR_S3,DR_REDIS data
 ```
 
 ### EKS Pod and Container Architecture
@@ -1845,3 +1931,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ---
 
 **Disclaimer**: This deployment guide provides a comprehensive approach to deploying SettleMint's BTP on AWS. For production deployments, engage with both AWS Solutions Architects and SettleMint's Customer Success team for proper sizing, security hardening, and compliance requirements specific to your organization and use case.
+
