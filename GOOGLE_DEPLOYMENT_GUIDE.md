@@ -397,7 +397,7 @@ graph TD
     subgraph MONITORING["👁️ Security Monitoring"]
         AUDIT_LOGS[📋 Cloud Audit Logs<br/>API Activity Logging<br/>Data Access Logs<br/>System Events]
         SCC[🛡️ Security Command Center<br/>Asset Discovery<br/>Vulnerability Management<br/>Threat Detection]
-        MONITORING[📊 Cloud Monitoring<br/>Security Metrics<br/>Custom Dashboards<br/>Alerting Policies]
+        CLOUD_MONITORING[📊 Cloud Monitoring<br/>Security Metrics<br/>Custom Dashboards<br/>Alerting Policies]
         LOGGING[📝 Cloud Logging<br/>Centralized Logs<br/>Log-based Metrics<br/>Export to BigQuery]
     end
     
@@ -423,8 +423,8 @@ graph TD
     
     %% Monitoring Flow
     AUDIT_LOGS --> SCC
-    SCC --> MONITORING
-    MONITORING --> LOGGING
+    SCC --> CLOUD_MONITORING
+    CLOUD_MONITORING --> LOGGING
     
     %% Cross-layer Integration
     WORKLOAD_ID --> KMS
@@ -443,7 +443,7 @@ graph TD
     class VPC,FIREWALL,PROXY,PEERING network
     class IAM,WORKLOAD_ID,SERVICE_ACCOUNTS,ORGANIZATION identity
     class KMS,SECRET_MANAGER,BINARY_AUTH,ENCRYPTION protection
-    class AUDIT_LOGS,SCC,MONITORING,LOGGING monitoring
+    class AUDIT_LOGS,SCC,CLOUD_MONITORING,LOGGING monitoring
 ```
 
 ## Prerequisites
