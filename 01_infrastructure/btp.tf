@@ -1,3 +1,45 @@
+# ============================================================================
+# SETTLEMINT BLOCKCHAIN TRANSFORMATION PLATFORM (BTP) DEPLOYMENT
+# ============================================================================
+# 
+# Deploys and configures SettleMint's Blockchain Transformation Platform,
+# the core application suite that provides comprehensive blockchain
+# development, deployment, and management capabilities. This deployment
+# represents the culmination of the infrastructure setup, bringing together
+# all supporting services to deliver a complete blockchain platform.
+# 
+# BTP PLATFORM OVERVIEW:
+# SettleMint's BTP is an enterprise blockchain platform that provides:
+# - Multi-blockchain support (Ethereum, Hyperledger Fabric, IPFS)
+# - Low-code/no-code blockchain application development
+# - Comprehensive blockchain network management and monitoring
+# - Smart contract development, testing, and deployment tools
+# - Enterprise-grade security and compliance features
+# - Multi-tenant architecture for organizational deployment
+# 
+# PLATFORM ARCHITECTURE:
+# The BTP deployment consists of multiple microservices:
+# - Web Application: User interface and dashboard
+# - API Gateway: RESTful APIs for blockchain operations
+# - Blockchain Connectors: Integration with various blockchain networks
+# - Identity Management: User authentication and authorization
+# - Monitoring Services: Platform metrics and blockchain analytics
+# - External DNS Controller: Automatic DNS record management
+# 
+# ENTERPRISE INTEGRATION:
+# - OAuth integration with Google Cloud for user authentication
+# - Vault integration for secure secrets management
+# - PostgreSQL integration for application data storage
+# - Redis integration for session management and caching
+# - MinIO integration for file storage and blockchain data
+# - Comprehensive monitoring and logging capabilities
+# 
+# ============================================================================
+
+# JWT Signing Key Generation
+# Generates a cryptographically secure random key for JSON Web Token (JWT)
+# signing operations. JWTs are used for secure user authentication and
+# session management across BTP platform services.
 resource "random_password" "jwtSigningKey" {
   length  = 32
   special = false

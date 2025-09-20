@@ -1,3 +1,44 @@
+# ============================================================================
+# HASHICORP VAULT SECRETS MANAGEMENT DEPLOYMENT
+# ============================================================================
+# 
+# Deploys and configures HashiCorp Vault, an enterprise-grade secrets
+# management platform that provides secure storage, dynamic secrets
+# generation, and encryption services for the BTP platform. Vault serves
+# as the central security hub for all sensitive data and cryptographic operations.
+# 
+# VAULT OVERVIEW:
+# HashiCorp Vault is chosen for the BTP platform due to its:
+# - Zero-trust security model with comprehensive audit logging
+# - Dynamic secrets generation for temporary, scoped access
+# - Multiple authentication methods (AppRole, Kubernetes, OIDC)
+# - Encryption-as-a-Service for application-level data protection
+# - Policy-based access control with fine-grained permissions
+# - Auto-unsealing capabilities with cloud KMS integration
+# 
+# BTP PLATFORM INTEGRATION:
+# In the BTP deployment, Vault serves critical security functions:
+# - Blockchain private key storage and management
+# - Database credentials and connection strings
+# - API keys and service account tokens
+# - SSL/TLS certificate private keys
+# - Encryption keys for application data protection
+# - OAuth tokens and session management secrets
+# 
+# ENTERPRISE SECURITY FEATURES:
+# - Google Cloud KMS integration for auto-unsealing
+# - Comprehensive audit logging and compliance reporting
+# - High availability and disaster recovery capabilities
+# - Integration with enterprise identity providers
+# - Policy-as-code for consistent security governance
+# - Secrets rotation and lifecycle management
+# 
+# ============================================================================
+
+# Google Cloud Service Account for Vault
+# Creates a dedicated Google Cloud service account with KMS permissions
+# for Vault auto-unsealing operations. This service account enables Vault
+# to authenticate with Google Cloud KMS without static credentials.
 module "service_accounts" {
   source        = "terraform-google-modules/service-accounts/google"
   version       = "4.6.0"
