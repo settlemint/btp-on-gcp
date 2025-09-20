@@ -22,7 +22,7 @@
 > **Contact SettleMint:**
 > - Website: [www.settlemint.com](https://www.settlemint.com)
 > - Email: support@settlemint.com
-> - Documentation: [docs.settlemint.com](https://docs.settlemint.com)
+> - Documentation: [Developer Documentation](https://console.settlemint.com/documentation/)
 
 This guide provides a comprehensive deployment strategy for **SettleMint's Blockchain Transformation Platform (BTP)** on **Google Cloud Platform (GCP)**. This implementation leverages Google Cloud's managed services and enterprise-grade infrastructure to provide a robust, scalable blockchain platform deployment.
 
@@ -1820,7 +1820,7 @@ gcloud scc findings create FINDING_ID \
 | **GKE Documentation** | [cloud.google.com/kubernetes-engine/docs](https://cloud.google.com/kubernetes-engine/docs) | Kubernetes on Google Cloud |
 | **Google Cloud Architecture Center** | [cloud.google.com/architecture](https://cloud.google.com/architecture) | Best practices and reference architectures |
 | **Google Cloud Support** | [console.cloud.google.com/support](https://console.cloud.google.com/support) | Technical support |
-| **SettleMint Documentation** | [www.settlemint.com/documentation](https://www.settlemint.com/documentation) | Platform documentation |
+| **SettleMint Documentation** | [Developer Documentation](https://console.settlemint.com/documentation/) | Platform documentation |
 
 ### Contributing
 

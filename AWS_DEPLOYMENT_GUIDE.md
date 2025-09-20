@@ -22,7 +22,7 @@
 > **Contact SettleMint:**
 > - Website: [www.settlemint.com](https://www.settlemint.com)
 > - Email: support@settlemint.com
-> - Documentation: [docs.settlemint.com](https://docs.settlemint.com)
+> - Documentation: [Developer Documentation](https://console.settlemint.com/documentation/)
 
 This guide provides a comprehensive deployment strategy for **SettleMint's Blockchain Transformation Platform (BTP)** on **Amazon Web Services (AWS)**. This implementation leverages AWS's managed services and enterprise-grade infrastructure to provide a robust, scalable blockchain platform deployment.
 
@@ -227,6 +227,88 @@ graph TD
     class DR_ALB,DR_APP secondary
     class R53_HEALTH,CLOUDWATCH,BACKUP_AUTOMATION monitoring
     class PROD_RDS,PROD_S3,PROD_REDIS,DR_RDS,DR_S3,DR_REDIS data
+```
+
+### AWS Security and Compliance Architecture
+
+```mermaid
+graph TD
+    subgraph PERIMETER["🛡️ Security Perimeter"]
+        WAF[🛡️ AWS WAF<br/>Web Application Firewall<br/>DDoS Protection<br/>Bot Management]
+        SHIELD[🛡️ AWS Shield<br/>DDoS Protection<br/>Advanced Threat Detection<br/>24/7 Response Team]
+        CLOUDFRONT[🌐 CloudFront<br/>Global CDN<br/>Edge Security<br/>Geographic Blocking]
+    end
+    
+    subgraph NETWORK["🌐 Network Security"]
+        VPC[🏠 Virtual Private Cloud<br/>Isolated Network<br/>Private Subnets<br/>NAT Gateways]
+        NACL[🚧 Network ACLs<br/>Subnet-level Firewall<br/>Stateless Rules<br/>Traffic Control]
+        SG[🔒 Security Groups<br/>Instance-level Firewall<br/>Stateful Rules<br/>Port Control]
+        VPC_ENDPOINTS[🔗 VPC Endpoints<br/>Private Service Access<br/>No Internet Routing<br/>Enhanced Security]
+    end
+    
+    subgraph IDENTITY["👤 Identity & Access"]
+        IAM_USERS[👥 IAM Users<br/>Human Access<br/>MFA Required<br/>Temporary Credentials]
+        IAM_ROLES[🎭 IAM Roles<br/>Service Access<br/>Cross-account Access<br/>Federated Identity]
+        IRSA[🔐 IRSA<br/>Pod-level Identity<br/>No Static Credentials<br/>Automatic Rotation]
+        STS[🎫 AWS STS<br/>Temporary Credentials<br/>Token Service<br/>Assume Role]
+    end
+    
+    subgraph DATA_PROTECTION["🔐 Data Protection"]
+        KMS[🗝️ AWS KMS<br/>Encryption Keys<br/>Hardware Security<br/>Audit Logging]
+        SECRETS[🔒 Secrets Manager<br/>Credential Storage<br/>Automatic Rotation<br/>Fine-grained Access]
+        PARAMETER[📋 Parameter Store<br/>Configuration Data<br/>Hierarchical Storage<br/>Change Notifications]
+        ENCRYPTION[🔐 Encryption at Rest<br/>EBS Encryption<br/>S3 Encryption<br/>RDS Encryption]
+    end
+    
+    subgraph MONITORING["👁️ Security Monitoring"]
+        CLOUDTRAIL[📋 CloudTrail<br/>API Audit Logging<br/>Data Events<br/>Insight Events]
+        GUARDDUTY[🔍 GuardDuty<br/>Threat Detection<br/>Machine Learning<br/>Threat Intelligence]
+        INSPECTOR[🔎 Inspector<br/>Vulnerability Assessment<br/>Network Reachability<br/>Security Standards]
+        CONFIG[⚙️ AWS Config<br/>Configuration Compliance<br/>Change Tracking<br/>Remediation]
+    end
+    
+    %% Security Flow
+    WAF --> SHIELD
+    SHIELD --> CLOUDFRONT
+    CLOUDFRONT --> VPC
+    
+    %% Network Security
+    VPC --> NACL
+    NACL --> SG
+    SG --> VPC_ENDPOINTS
+    
+    %% Identity Flow
+    IAM_USERS --> STS
+    IAM_ROLES --> STS
+    STS --> IRSA
+    
+    %% Data Protection Flow
+    KMS --> SECRETS
+    SECRETS --> PARAMETER
+    PARAMETER --> ENCRYPTION
+    
+    %% Monitoring Flow
+    CLOUDTRAIL --> GUARDDUTY
+    GUARDDUTY --> INSPECTOR
+    INSPECTOR --> CONFIG
+    
+    %% Cross-layer Security
+    IRSA --> KMS
+    VPC_ENDPOINTS --> SECRETS
+    CONFIG --> CLOUDTRAIL
+    
+    %% Styling
+    classDef perimeter fill:#ff5722,stroke:#d84315,stroke-width:3px,color:#fff,font-weight:bold
+    classDef network fill:#3f51b5,stroke:#283593,stroke-width:3px,color:#fff,font-weight:bold
+    classDef identity fill:#4caf50,stroke:#388e3c,stroke-width:3px,color:#fff,font-weight:bold
+    classDef protection fill:#9c27b0,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
+    classDef monitoring fill:#ff9800,stroke:#f57c00,stroke-width:3px,color:#000,font-weight:bold
+    
+    class WAF,SHIELD,CLOUDFRONT perimeter
+    class VPC,NACL,SG,VPC_ENDPOINTS network
+    class IAM_USERS,IAM_ROLES,IRSA,STS identity
+    class KMS,SECRETS,PARAMETER,ENCRYPTION protection
+    class CLOUDTRAIL,GUARDDUTY,INSPECTOR,CONFIG monitoring
 ```
 
 ### EKS Pod and Container Architecture
@@ -1918,7 +2000,7 @@ aws guardduty create-detector --enable
 | **AWS EKS Documentation** | [docs.aws.amazon.com/eks](https://docs.aws.amazon.com/eks/) | Kubernetes on AWS |
 | **AWS Well-Architected Framework** | [aws.amazon.com/architecture/well-architected](https://aws.amazon.com/architecture/well-architected/) | Best practices |
 | **AWS Support** | [console.aws.amazon.com/support](https://console.aws.amazon.com/support/) | Technical support |
-| **SettleMint Documentation** | [www.settlemint.com/documentation](https://www.settlemint.com/documentation) | Platform documentation |
+| **SettleMint Documentation** | [Developer Documentation](https://console.settlemint.com/documentation/) | Platform documentation |
 
 ### Contributing
 

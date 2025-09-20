@@ -1274,81 +1274,176 @@ User Request → Google OAuth2 → JWT Token → Role-Based Access → Resource 
 **Vault Security Architecture**:
 
 ```mermaid
-graph TB
-    subgraph "Google Cloud KMS"
-        KEYRING[Key Ring<br/>vault-key-ring-{suffix}]
-        CRYPTOKEY[Crypto Key<br/>vault-key<br/>Auto-unseal]
+graph TD
+    subgraph KMS["🔐 Google Cloud KMS"]
+        KEYRING[🗝️ Key Ring<br/>vault-key-ring-suffix<br/>Regional Resource<br/>HSM-backed]
+        CRYPTOKEY[🔑 Crypto Key<br/>vault-unseal-key<br/>AES-256 Encryption<br/>Auto-rotation]
     end
     
-    subgraph "Vault Cluster"
-        subgraph "Authentication"
-            APPROLE[AppRole Auth Method<br/>platform-role<br/>TTL: 1h, Max: 4h]
-            TOKEN[Vault Tokens<br/>Time-limited<br/>Policy-bound]
+    subgraph VAULT["🔒 HashiCorp Vault Cluster"]
+        subgraph AUTH["🎭 Authentication Layer"]
+            APPROLE[🎪 AppRole Method<br/>platform-role<br/>TTL: 1h, Max: 4h<br/>Secure ID Generation]
+            TOKEN[🎫 Vault Tokens<br/>Time-limited Access<br/>Policy-bound<br/>Renewable]
         end
         
-        subgraph "Secret Engines"
-            ETHEREUM[ethereum/<br/>KV-v2 Engine<br/>Private Keys<br/>Wallet Data]
-            FABRIC[fabric/<br/>KV-v2 Engine<br/>Certificates<br/>MSP Data]
-            IPFS[ipfs/<br/>KV-v2 Engine<br/>Node Keys<br/>Swarm Keys]
+        subgraph ENGINES["⚙️ Secret Engines"]
+            ETHEREUM[⟠ ethereum/ Engine<br/>KV-v2 Store<br/>Private Keys<br/>Wallet Data]
+            FABRIC[🔗 fabric/ Engine<br/>KV-v2 Store<br/>Certificates<br/>MSP Data]
+            IPFS[🌐 ipfs/ Engine<br/>KV-v2 Store<br/>Node Keys<br/>Swarm Keys]
         end
         
-        subgraph "Policies"
-            ETH_POLICY[ethereum-policy<br/>CRUD on ethereum/*]
-            FAB_POLICY[fabric-policy<br/>CRUD on fabric/*]
-            IPFS_POLICY[ipfs-policy<br/>CRUD on ipfs/*]
+        subgraph POLICIES["📋 Access Policies"]
+            ETH_POLICY[⟠ ethereum-policy<br/>CRUD Operations<br/>Path: ethereum/*<br/>Capability Control]
+            FAB_POLICY[🔗 fabric-policy<br/>CRUD Operations<br/>Path: fabric/*<br/>Capability Control]
+            IPFS_POLICY[🌐 ipfs-policy<br/>CRUD Operations<br/>Path: ipfs/*<br/>Capability Control]
         end
         
-        subgraph "Vault Core"
-            UNSEAL[Auto-unseal Process<br/>Google Cloud KMS]
-            STORAGE[File Storage Backend<br/>Persistent Volume<br/>1Gi]
-            AUDIT[Audit Logging<br/>All Operations<br/>Logged]
+        subgraph CORE["🏛️ Vault Core"]
+            UNSEAL[🔓 Auto-unseal<br/>Cloud KMS Integration<br/>Zero-touch Recovery<br/>High Availability]
+            STORAGE[💾 File Storage<br/>Persistent Volume<br/>1Gi Capacity<br/>Encrypted at Rest]
+            AUDIT[📋 Audit Logging<br/>All Operations<br/>Compliance Ready<br/>Tamper-proof]
         end
     end
     
-    subgraph "BTP Platform"
-        BTPAPI[BTP API Services<br/>role_id + secret_id<br/>→ Vault Token]
-        ENGINE[Deployment Engine<br/>Blockchain Secrets<br/>Access]
+    subgraph PLATFORM["🚀 BTP Platform"]
+        BTPAPI[🔌 BTP API Services<br/>role_id + secret_id<br/>Token Exchange<br/>Authenticated Access]
+        ENGINE[⚙️ Deployment Engine<br/>Blockchain Secrets<br/>Network Deployment<br/>Key Management]
     end
     
-    subgraph "Blockchain Networks"
-        ETHNET[Ethereum Networks<br/>Private Keys<br/>Node Configs]
-        FABRICNET[Fabric Networks<br/>Certificates<br/>Channel Configs]
-        IPFSNET[IPFS Networks<br/>Peer Identity<br/>Swarm Keys]
+    subgraph NETWORKS["⟠ Blockchain Networks"]
+        ETHNET[⟠ Ethereum Networks<br/>Private Keys<br/>Node Configurations<br/>Smart Contracts]
+        FABRICNET[🔗 Fabric Networks<br/>Certificates & MSP<br/>Channel Configs<br/>Chaincode Secrets]
+        IPFSNET[🌐 IPFS Networks<br/>Peer Identity<br/>Swarm Keys<br/>Content Addressing]
     end
     
-    %% Connections
+    %% KMS to Vault Core
     KEYRING --> CRYPTOKEY
     CRYPTOKEY --> UNSEAL
     UNSEAL --> STORAGE
+    STORAGE --> AUDIT
     
+    %% BTP Platform Authentication
     BTPAPI --> APPROLE
     APPROLE --> TOKEN
+    
+    %% Token to Policies
     TOKEN --> ETH_POLICY
     TOKEN --> FAB_POLICY
     TOKEN --> IPFS_POLICY
     
+    %% Policies to Secret Engines
     ETH_POLICY --> ETHEREUM
     FAB_POLICY --> FABRIC
     IPFS_POLICY --> IPFS
     
+    %% Engine Access to Secrets
     ENGINE --> ETHEREUM
     ENGINE --> FABRIC
     ENGINE --> IPFS
     
+    %% Secrets to Blockchain Networks
     ETHEREUM --> ETHNET
     FABRIC --> FABRICNET
     IPFS --> IPFSNET
     
-    %% Styling
-    classDef kms fill:#4285f4,stroke:#1a73e8,stroke-width:2px,color:#fff
-    classDef vault fill:#000000,stroke:#ffb000,stroke-width:2px,color:#fff
-    classDef btp fill:#ff6b35,stroke:#e55100,stroke-width:2px,color:#fff
-    classDef blockchain fill:#9c27b0,stroke:#7b1fa2,stroke-width:2px,color:#fff
+    %% Styling with Enhanced Colors
+    classDef kms fill:#4285f4,stroke:#1a73e8,stroke-width:3px,color:#fff,font-weight:bold
+    classDef vault fill:#000000,stroke:#ffb000,stroke-width:3px,color:#fff,font-weight:bold
+    classDef btp fill:#ff6b35,stroke:#e55100,stroke-width:3px,color:#fff,font-weight:bold
+    classDef blockchain fill:#9c27b0,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
+    classDef auth fill:#2e7d32,stroke:#1b5e20,stroke-width:3px,color:#fff,font-weight:bold
+    classDef policy fill:#d32f2f,stroke:#c62828,stroke-width:3px,color:#fff,font-weight:bold
     
     class KEYRING,CRYPTOKEY kms
-    class APPROLE,TOKEN,ETHEREUM,FABRIC,IPFS,ETH_POLICY,FAB_POLICY,IPFS_POLICY,UNSEAL,STORAGE,AUDIT vault
+    class UNSEAL,STORAGE,AUDIT,ETHEREUM,FABRIC,IPFS vault
+    class APPROLE,TOKEN auth
+    class ETH_POLICY,FAB_POLICY,IPFS_POLICY policy
     class BTPAPI,ENGINE btp
     class ETHNET,FABRICNET,IPFSNET blockchain
+```
+
+### Data Flow and Storage Architecture
+
+```mermaid
+graph TD
+    subgraph INGRESS["📥 Data Ingress"]
+        USER_DATA[👤 User Input<br/>Smart Contracts<br/>Configurations<br/>Files & Documents]
+        API_DATA[🔌 API Requests<br/>REST Calls<br/>GraphQL Queries<br/>WebSocket Messages]
+        BLOCKCHAIN_DATA[⟠ Blockchain Data<br/>Transactions<br/>Block Data<br/>Event Logs]
+    end
+    
+    subgraph PROCESSING["⚙️ Data Processing Layer"]
+        VALIDATION[✅ Data Validation<br/>Schema Validation<br/>Business Rules<br/>Security Checks]
+        TRANSFORMATION[🔄 Data Transformation<br/>Format Conversion<br/>Enrichment<br/>Normalization]
+        ROUTING[🛣️ Data Routing<br/>Service Discovery<br/>Load Balancing<br/>Circuit Breaker]
+    end
+    
+    subgraph STORAGE["💾 Storage Layer"]
+        subgraph TRANSACTIONAL["🗄️ Transactional Storage"]
+            POSTGRES_MAIN[(🗄️ PostgreSQL<br/>User Data<br/>Configurations<br/>Audit Logs)]
+            POSTGRES_REPLICA[(📋 Read Replica<br/>Analytics<br/>Reporting<br/>Backup)]
+        end
+        
+        subgraph CACHE["⚡ Cache Layer"]
+            REDIS_MAIN[(⚡ Redis Primary<br/>Session Data<br/>Real-time Cache<br/>Message Queue)]
+            REDIS_REPLICA[(📊 Redis Replica<br/>Read Operations<br/>Failover<br/>Analytics)]
+        end
+        
+        subgraph OBJECT_STORE["📁 Object Storage"]
+            MINIO_HOT[📁 Hot Storage<br/>Active Files<br/>Smart Contracts<br/>Recent Backups]
+            MINIO_COLD[🧊 Cold Storage<br/>Archive Data<br/>Historical Logs<br/>Long-term Backups]
+        end
+        
+        subgraph SECRETS["🔒 Secrets Storage"]
+            VAULT_SECRETS[🔐 Vault Secrets<br/>Private Keys<br/>Certificates<br/>API Keys]
+            KMS_KEYS[🗝️ KMS Keys<br/>Encryption Keys<br/>Signing Keys<br/>Root Certificates]
+        end
+    end
+    
+    subgraph OUTPUT["📤 Data Output"]
+        WEB_UI[💻 Web Interface<br/>Dashboards<br/>Reports<br/>Real-time Updates]
+        API_RESPONSES[🔌 API Responses<br/>JSON/XML<br/>Status Updates<br/>Error Messages]
+        BLOCKCHAIN_TX[⟠ Blockchain Transactions<br/>Smart Contract Calls<br/>Token Transfers<br/>Event Emissions]
+    end
+    
+    %% Ingress Flow
+    USER_DATA --> VALIDATION
+    API_DATA --> VALIDATION
+    BLOCKCHAIN_DATA --> VALIDATION
+    
+    %% Processing Flow
+    VALIDATION --> TRANSFORMATION
+    TRANSFORMATION --> ROUTING
+    
+    %% Storage Flow
+    ROUTING --> POSTGRES_MAIN
+    ROUTING --> REDIS_MAIN
+    ROUTING --> MINIO_HOT
+    ROUTING --> VAULT_SECRETS
+    
+    %% Replication Flow
+    POSTGRES_MAIN --> POSTGRES_REPLICA
+    REDIS_MAIN --> REDIS_REPLICA
+    MINIO_HOT --> MINIO_COLD
+    VAULT_SECRETS --> KMS_KEYS
+    
+    %% Output Flow
+    POSTGRES_REPLICA --> WEB_UI
+    REDIS_REPLICA --> API_RESPONSES
+    MINIO_HOT --> BLOCKCHAIN_TX
+    
+    %% Styling
+    classDef ingress fill:#e8f5e8,stroke:#4caf50,stroke-width:3px,color:#000,font-weight:bold
+    classDef processing fill:#fff3e0,stroke:#ff9800,stroke-width:3px,color:#000,font-weight:bold
+    classDef storage fill:#e3f2fd,stroke:#2196f3,stroke-width:3px,color:#000,font-weight:bold
+    classDef output fill:#fce4ec,stroke:#e91e63,stroke-width:3px,color:#000,font-weight:bold
+    classDef secrets fill:#f3e5f5,stroke:#9c27b0,stroke-width:3px,color:#000,font-weight:bold
+    
+    class USER_DATA,API_DATA,BLOCKCHAIN_DATA ingress
+    class VALIDATION,TRANSFORMATION,ROUTING processing
+    class POSTGRES_MAIN,POSTGRES_REPLICA,REDIS_MAIN,REDIS_REPLICA,MINIO_HOT,MINIO_COLD storage
+    class VAULT_SECRETS,KMS_KEYS secrets
+    class WEB_UI,API_RESPONSES,BLOCKCHAIN_TX output
 ```
 
 ## Troubleshooting
@@ -1508,7 +1603,7 @@ For production deployments, consider these enhancements:
 
 | Resource | URL | Purpose |
 |----------|-----|---------|
-| **SettleMint Documentation** | [www.settlemint.com/documentation](https://www.settlemint.com/documentation) | Platform documentation |
+| **SettleMint Documentation** | [Developer Documentation](https://console.settlemint.com/documentation/) | Platform documentation |
 | **Support Portal** | Contact Customer Success | Enterprise support |
 
 ### Contributing

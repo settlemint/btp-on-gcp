@@ -24,7 +24,7 @@
 > **Contact SettleMint:**
 > - Website: [www.settlemint.com](https://www.settlemint.com)
 > - Email: support@settlemint.com
-> - Documentation: [docs.settlemint.com](https://docs.settlemint.com)
+> - Documentation: [Developer Documentation](https://console.settlemint.com/documentation/)
 
 This guide provides comprehensive instructions for deploying **SettleMint's Blockchain Transformation Platform (BTP)** on bare metal infrastructure without any managed cloud services. This approach offers maximum control, customization, and data sovereignty while requiring complete infrastructure management.
 
@@ -126,37 +126,93 @@ graph TD
 ### Option 2: Multi-Server Standard Deployment
 
 ```mermaid
-graph TB
-    subgraph "Load Balancer Server"
-        LB[NGINX Load Balancer<br/>+ SSL Termination]
+graph TD
+    USERS[👥 Enterprise Users<br/>Web Browsers<br/>Mobile Applications]
+    
+    subgraph LB_TIER["⚖️ Load Balancer Tier"]
+        LB1[🔀 NGINX LB Primary<br/>SSL Termination<br/>Health Checks<br/>Rate Limiting]
+        LB2[🔀 NGINX LB Secondary<br/>Keepalived Backup<br/>Failover Ready<br/>Configuration Sync]
+        VIP[🌐 Virtual IP<br/>Floating Address<br/>High Availability<br/>Automatic Failover]
     end
     
-    subgraph "Application Servers (2x)"
-        APP1[BTP App Server 1<br/>- Web UI<br/>- API Services]
-        APP2[BTP App Server 2<br/>- Web UI<br/>- API Services]
+    subgraph APP_TIER["🚀 Application Tier"]
+        APP1[💻 BTP App Server 1<br/>Web UI & APIs<br/>Session Handling<br/>Business Logic]
+        APP2[💻 BTP App Server 2<br/>Web UI & APIs<br/>Load Distribution<br/>Failover Capability]
+        APP3[💻 BTP App Server 3<br/>Web UI & APIs<br/>Scaling Reserve<br/>Performance Buffer]
     end
     
-    subgraph "Database Server"
-        DB[PostgreSQL Primary<br/>+ Streaming Replication]
+    subgraph DATA_TIER["🗄️ Data Tier"]
+        DB_PRIMARY[🗄️ PostgreSQL Primary<br/>Read/Write Operations<br/>Streaming Replication<br/>Backup Management]
+        DB_REPLICA1[📋 PostgreSQL Replica 1<br/>Read Operations<br/>Failover Ready<br/>Analytics Queries]
+        DB_REPLICA2[📋 PostgreSQL Replica 2<br/>Read Operations<br/>Geographic Distribution<br/>Disaster Recovery]
     end
     
-    subgraph "Cache Server"
-        CACHE[Redis Cluster<br/>High Availability]
+    subgraph CACHE_TIER["⚡ Cache Tier"]
+        REDIS_MASTER[⚡ Redis Master<br/>Write Operations<br/>Session Storage<br/>Real-time Data]
+        REDIS_SLAVE1[📊 Redis Slave 1<br/>Read Operations<br/>Automatic Failover<br/>Data Replication]
+        REDIS_SLAVE2[📊 Redis Slave 2<br/>Read Operations<br/>Load Distribution<br/>Backup Node]
     end
     
-    subgraph "Storage Server"
-        STORAGE[NFS/GlusterFS<br/>Shared Storage]
+    subgraph STORAGE_TIER["📁 Storage Tier"]
+        NFS[📁 NFS Primary<br/>Shared File System<br/>Network Storage<br/>Backup Integration]
+        GLUSTER1[🗂️ GlusterFS Node 1<br/>Distributed Storage<br/>Replication<br/>Self-healing]
+        GLUSTER2[🗂️ GlusterFS Node 2<br/>Distributed Storage<br/>High Availability<br/>Performance]
     end
     
-    USERS[Users] --> LB
-    LB --> APP1
-    LB --> APP2
-    APP1 --> DB
-    APP2 --> DB
-    APP1 --> CACHE
-    APP2 --> CACHE
-    APP1 --> STORAGE
-    APP2 --> STORAGE
+    %% User Flow
+    USERS --> VIP
+    VIP --> LB1
+    VIP --> LB2
+    
+    %% Load Balancer Flow
+    LB1 --> APP1
+    LB1 --> APP2
+    LB1 --> APP3
+    LB2 --> APP1
+    LB2 --> APP2
+    LB2 --> APP3
+    
+    %% Database Flow
+    APP1 --> DB_PRIMARY
+    APP2 --> DB_PRIMARY
+    APP3 --> DB_PRIMARY
+    DB_PRIMARY --> DB_REPLICA1
+    DB_PRIMARY --> DB_REPLICA2
+    APP1 --> DB_REPLICA1
+    APP2 --> DB_REPLICA2
+    
+    %% Cache Flow
+    APP1 --> REDIS_MASTER
+    APP2 --> REDIS_MASTER
+    APP3 --> REDIS_MASTER
+    REDIS_MASTER --> REDIS_SLAVE1
+    REDIS_MASTER --> REDIS_SLAVE2
+    APP1 --> REDIS_SLAVE1
+    APP2 --> REDIS_SLAVE2
+    
+    %% Storage Flow
+    APP1 --> NFS
+    APP2 --> NFS
+    APP3 --> NFS
+    NFS --> GLUSTER1
+    NFS --> GLUSTER2
+    
+    %% Styling
+    classDef user fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#000,font-weight:bold
+    classDef loadbalancer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
+    classDef application fill:#ff6b35,stroke:#e55100,stroke-width:3px,color:#fff,font-weight:bold
+    classDef database fill:#4caf50,stroke:#2e7d32,stroke-width:3px,color:#fff,font-weight:bold
+    classDef cache fill:#ff9800,stroke:#f57c00,stroke-width:3px,color:#fff,font-weight:bold
+    classDef storage fill:#795548,stroke:#5d4037,stroke-width:3px,color:#fff,font-weight:bold
+    classDef virtual fill:#9c27b0,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
+    
+    class USERS user
+    class LB1,LB2 loadbalancer
+    class VIP virtual
+    class APP1,APP2,APP3 application
+    class DB_PRIMARY,DB_REPLICA1,DB_REPLICA2 database
+    class REDIS_MASTER,REDIS_SLAVE1,REDIS_SLAVE2 cache
+    class NFS,GLUSTER1,GLUSTER2 storage
 ```
 
 **Server Specifications:**

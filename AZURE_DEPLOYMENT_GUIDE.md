@@ -22,7 +22,7 @@
 > **Contact SettleMint:**
 > - Website: [www.settlemint.com](https://www.settlemint.com)
 > - Email: support@settlemint.com
-> - Documentation: [docs.settlemint.com](https://docs.settlemint.com)
+> - Documentation: [Developer Documentation](https://console.settlemint.com/documentation/)
 
 This guide provides a comprehensive deployment strategy for **SettleMint's Blockchain Transformation Platform (BTP)** on **Microsoft Azure**. This implementation leverages Azure's managed services and enterprise-grade infrastructure to provide a robust, scalable blockchain platform deployment.
 
@@ -157,100 +157,87 @@ graph TD
     class ETH,FABRIC,IPFS,CUSTOM blockchain
 ```
 
-### Azure Cost Management Architecture
+### Azure Security and Compliance Architecture
 
 ```mermaid
-graph TB
-        subgraph "Global Services"
-            DNS[Azure DNS<br/>- DNS Zone Management<br/>- A & CNAME Records<br/>- Traffic Manager]
-            KV[Azure Key Vault<br/>- Secrets & Keys<br/>- Managed HSM<br/>- Certificate Management]
-            AAD[Azure Active Directory<br/>- Managed Identity<br/>- RBAC<br/>- Service Principals]
-            ACR[Azure Container Registry<br/>- Private Registries<br/>- Geo-replication<br/>- Vulnerability Scanning]
-        end
-        
-        subgraph "Regional Services - West Europe"
-            subgraph "Azure Kubernetes Service (AKS)"
-                subgraph "Ingress Layer"
-                    APPGW[Application Gateway<br/>- SSL Termination<br/>- Path Routing<br/>- WAF Integration]
-                    NGINX[NGINX Ingress<br/>Controller<br/>- Advanced Routing<br/>- Rate Limiting]
-                end
-                
-                subgraph "cluster-dependencies Namespace"
-                    POSTGRES[(Azure Database<br/>for PostgreSQL<br/>- Flexible Server<br/>- High Availability)]
-                    REDIS[(Azure Cache<br/>for Redis<br/>- Premium Tier<br/>- Clustering)]
-                    STORAGE[(Azure Blob Storage<br/>- Hot/Cool/Archive<br/>- Lifecycle Management)]
-                    VAULT[HashiCorp Vault<br/>- Key Vault Integration<br/>- Managed Identity Auth]
-                    CERTMGR[cert-manager<br/>- SSL Certificates<br/>- Let's Encrypt<br/>- Azure DNS01]
-                end
-                
-                subgraph "settlemint Namespace"
-                    WEBAPP[BTP Web UI<br/>React SPA<br/>- Azure CDN<br/>- Static Web Apps]
-                    API[BTP API Services<br/>Node.js Backend<br/>- Auto Scaling<br/>- Health Probes]
-                    ENGINE[Deployment Engine<br/>Blockchain Orchestration<br/>- Spot Instances<br/>- GPU Nodes]
-                    CLUSTER[Cluster Manager<br/>Infrastructure Control<br/>- AKS Integration<br/>- Container Instances]
-                    MONITOR[Observability Stack<br/>Grafana, Prometheus<br/>- Azure Monitor<br/>- App Insights]
-                end
-                
-                subgraph "deployments Namespace"
-                    ETH[Ethereum<br/>Networks<br/>- Premium SSD<br/>- Ultra Disk]
-                    FABRIC[Hyperledger<br/>Fabric<br/>- Azure Files<br/>- Key Vault Certs]
-                    IPFS[IPFS<br/>Nodes<br/>- Blob Storage<br/>- CDN Integration]
-                    CUSTOM[Custom<br/>Applications<br/>- Logic Apps<br/>- Functions]
-                end
-            end
-            
-            subgraph "Platform Services"
-                MONITOR_SVC[Azure Monitor<br/>- Metrics & Logs<br/>- Alerts & Dashboards<br/>- Log Analytics]
-                APPINSIGHTS[Application Insights<br/>- APM & Tracing<br/>- Dependency Mapping<br/>- Live Metrics]
-                SECURITY[Azure Security Center<br/>- Threat Protection<br/>- Compliance Dashboard<br/>- Recommendations]
-            end
-        end
+graph TD
+    subgraph PERIMETER["🛡️ Security Perimeter"]
+        WAF[🛡️ Application Gateway WAF<br/>Web Application Firewall<br/>OWASP Top 10<br/>Custom Rules]
+        DDOS[🛡️ DDoS Protection<br/>Standard & Premium<br/>Always-on Monitoring<br/>Rapid Response]
+        FRONTDOOR[🌐 Azure Front Door<br/>Global Load Balancer<br/>Edge Security<br/>Geographic Filtering]
     end
     
-    subgraph "External"
-        USERS[Enterprise Users]
-        INTERNET[Internet]
-        REGISTRAR[Domain Registrar<br/>NS Delegation]
+    subgraph NETWORK["🌐 Network Security"]
+        VNET[🏠 Virtual Network<br/>Isolated Network<br/>Private Subnets<br/>Service Endpoints]
+        NSG[🚧 Network Security Groups<br/>Subnet-level Firewall<br/>Application Security Groups<br/>Traffic Control]
+        FIREWALL[🔥 Azure Firewall<br/>Network & Application Rules<br/>Threat Intelligence<br/>FQDN Filtering]
+        PRIVATE_ENDPOINTS[🔗 Private Endpoints<br/>Private Service Access<br/>No Internet Routing<br/>Enhanced Security]
     end
     
-    %% Connections
-    USERS --> INTERNET
-    INTERNET --> DNS
-    INTERNET --> APPGW
-    DNS --> APPGW
-    REGISTRAR -.-> DNS
-    APPGW --> NGINX
-    NGINX --> WEBAPP
-    NGINX --> API
-    NGINX --> MONITOR
+    subgraph IDENTITY["👤 Identity & Access"]
+        AAD[👤 Azure Active Directory<br/>Identity Provider<br/>Conditional Access<br/>MFA Enforcement]
+        MANAGED_ID[🎭 Managed Identity<br/>System & User Assigned<br/>No Credential Management<br/>Automatic Rotation]
+        RBAC[👮 Azure RBAC<br/>Fine-grained Permissions<br/>Resource-level Access<br/>Inheritance]
+        PIM[🔐 Privileged Identity<br/>Just-in-time Access<br/>Approval Workflows<br/>Access Reviews]
+    end
     
-    API --> POSTGRES
-    API --> REDIS
-    API --> VAULT
-    ENGINE --> STORAGE
-    VAULT --> KV
-    CERTMGR --> DNS
-    CERTMGR --> AAD
-    VAULT --> AAD
+    subgraph DATA_PROTECTION["🔐 Data Protection"]
+        KEYVAULT[🗝️ Azure Key Vault<br/>Secrets & Keys<br/>Managed HSM<br/>Certificate Management]
+        DISK_ENCRYPTION[🔐 Disk Encryption<br/>Azure Disk Encryption<br/>Platform Managed Keys<br/>Customer Managed Keys]
+        STORAGE_ENCRYPTION[📁 Storage Encryption<br/>Blob Encryption<br/>Service-side Encryption<br/>Client-side Encryption]
+        SQL_TDE[🗄️ SQL TDE<br/>Transparent Data Encryption<br/>Always Encrypted<br/>Dynamic Data Masking]
+    end
     
-    ENGINE --> ETH
-    ENGINE --> FABRIC
-    ENGINE --> IPFS
-    ENGINE --> CUSTOM
+    subgraph MONITORING["👁️ Security Monitoring"]
+        DEFENDER[🛡️ Azure Defender<br/>Threat Protection<br/>Security Alerts<br/>Incident Response]
+        SENTINEL[🔍 Azure Sentinel<br/>SIEM & SOAR<br/>Threat Hunting<br/>AI-powered Detection]
+        MONITOR[📊 Azure Monitor<br/>Security Metrics<br/>Log Analytics<br/>Workbooks]
+        POLICY[📋 Azure Policy<br/>Compliance Enforcement<br/>Governance<br/>Remediation]
+    end
     
-    MONITOR --> MONITOR_SVC
-    MONITOR --> APPINSIGHTS
+    %% Security Perimeter Flow
+    WAF --> DDOS
+    DDOS --> FRONTDOOR
+    FRONTDOOR --> VNET
+    
+    %% Network Security Flow
+    VNET --> NSG
+    NSG --> FIREWALL
+    FIREWALL --> PRIVATE_ENDPOINTS
+    
+    %% Identity Flow
+    AAD --> MANAGED_ID
+    MANAGED_ID --> RBAC
+    RBAC --> PIM
+    
+    %% Data Protection Flow
+    KEYVAULT --> DISK_ENCRYPTION
+    DISK_ENCRYPTION --> STORAGE_ENCRYPTION
+    STORAGE_ENCRYPTION --> SQL_TDE
+    
+    %% Monitoring Flow
+    DEFENDER --> SENTINEL
+    SENTINEL --> MONITOR
+    MONITOR --> POLICY
+    
+    %% Cross-layer Integration
+    MANAGED_ID --> KEYVAULT
+    PRIVATE_ENDPOINTS --> KEYVAULT
+    POLICY --> DEFENDER
+    RBAC --> KEYVAULT
     
     %% Styling
-    classDef azureService fill:#0078d4,stroke:#005a9e,stroke-width:2px,color:#fff
-    classDef k8sService fill:#326ce5,stroke:#1a73e8,stroke-width:2px,color:#fff
-    classDef btpService fill:#ff6b35,stroke:#e55100,stroke-width:2px,color:#fff
-    classDef external fill:#34a853,stroke:#137333,stroke-width:2px,color:#fff
+    classDef perimeter fill:#d32f2f,stroke:#c62828,stroke-width:3px,color:#fff,font-weight:bold
+    classDef network fill:#1976d2,stroke:#1565c0,stroke-width:3px,color:#fff,font-weight:bold
+    classDef identity fill:#388e3c,stroke:#2e7d32,stroke-width:3px,color:#fff,font-weight:bold
+    classDef protection fill:#7b1fa2,stroke:#6a1b9a,stroke-width:3px,color:#fff,font-weight:bold
+    classDef monitoring fill:#f57c00,stroke:#ef6c00,stroke-width:3px,color:#000,font-weight:bold
     
-    class DNS,KV,AAD,ACR,APPGW,POSTGRES,REDIS,STORAGE,MONITOR_SVC,APPINSIGHTS,SECURITY azureService
-    class NGINX,VAULT,CERTMGR k8sService
-    class WEBAPP,API,ENGINE,CLUSTER,MONITOR,ETH,FABRIC,IPFS,CUSTOM btpService
-    class USERS,INTERNET,REGISTRAR external
+    class WAF,DDOS,FRONTDOOR perimeter
+    class VNET,NSG,FIREWALL,PRIVATE_ENDPOINTS network
+    class AAD,MANAGED_ID,RBAC,PIM identity
+    class KEYVAULT,DISK_ENCRYPTION,STORAGE_ENCRYPTION,SQL_TDE protection
+    class DEFENDER,SENTINEL,MONITOR,POLICY monitoring
 ```
 
 ### AKS Pod and Container Architecture
@@ -1970,7 +1957,7 @@ az monitor diagnostic-settings create \
 | **Azure AKS Documentation** | [docs.microsoft.com/azure/aks](https://docs.microsoft.com/azure/aks/) | Kubernetes on Azure |
 | **Azure Well-Architected Framework** | [docs.microsoft.com/azure/architecture/framework](https://docs.microsoft.com/azure/architecture/framework/) | Best practices |
 | **Azure Support** | [portal.azure.com/#blade/Microsoft_Azure_Support](https://portal.azure.com/#blade/Microsoft_Azure_Support) | Technical support |
-| **SettleMint Documentation** | [www.settlemint.com/documentation](https://www.settlemint.com/documentation) | Platform documentation |
+| **SettleMint Documentation** | [Developer Documentation](https://console.settlemint.com/documentation/) | Platform documentation |
 
 ### Contributing
 
