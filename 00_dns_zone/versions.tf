@@ -91,4 +91,5 @@ terraform {
   # - Update all environments simultaneously to maintain consistency
   # - Consider using version ranges (~> 1.12.0) for patch updates only
   required_version = "1.12.2"
+
 }

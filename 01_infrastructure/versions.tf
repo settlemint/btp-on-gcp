@@ -133,4 +133,5 @@ terraform {
   # - Update all team environments simultaneously to maintain consistency
   # - Validate all infrastructure operations after version upgrades
   required_version = "1.12.2"
+
 }

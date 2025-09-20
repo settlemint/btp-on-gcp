@@ -41,7 +41,7 @@
 # to authenticate with Google Cloud KMS without static credentials.
 module "service_accounts" {
   source        = "terraform-google-modules/service-accounts/google"
-  version       = "4.5.4"
+  version       = "4.6.0"
   project_id    = var.gcp_project_id
   prefix        = "vault-${random_id.platform_suffix.hex}"
   names         = ["unseal-sa"]

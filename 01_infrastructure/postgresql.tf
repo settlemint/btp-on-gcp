@@ -89,6 +89,7 @@ resource "helm_release" "postgresql" {
   # Co-locates with other infrastructure services
   namespace = var.dependencies_namespace
 
+
   # Namespace creation (redundant but safe)
   create_namespace = true
 
