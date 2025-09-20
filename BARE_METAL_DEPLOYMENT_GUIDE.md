@@ -414,6 +414,170 @@ ceph-deploy osd create --data /dev/sdb node2
 ceph-deploy osd create --data /dev/sdb node3
 ```
 
+### Bare Metal Network Topology Options
+
+```mermaid
+graph TD
+    subgraph OPTION1["🌐 Option 1: Single Network (Simple)"]
+        subgraph SINGLE_NET["192.168.1.0/24"]
+            SINGLE_SWITCH[🔀 Managed Switch<br/>24-port Gigabit<br/>VLAN Support<br/>Link Aggregation]
+            SINGLE_ROUTER[🌐 Router/Firewall<br/>Internet Gateway<br/>NAT/PAT<br/>Basic Security]
+        end
+        
+        SINGLE_SERVERS[🖥️ All Servers<br/>Same Network<br/>Simple Configuration<br/>Basic Isolation]
+    end
+    
+    subgraph OPTION2["🌐 Option 2: Segmented Network (Recommended)"]
+        subgraph DMZ_NET["DMZ: 192.168.1.0/24"]
+            DMZ_SWITCH[🔀 DMZ Switch<br/>Load Balancers<br/>Reverse Proxies<br/>Public Services]
+        end
+        
+        subgraph APP_NET["App Tier: 10.0.1.0/24"]
+            APP_SWITCH[🔀 Application Switch<br/>BTP Services<br/>Kubernetes Nodes<br/>Container Runtime]
+        end
+        
+        subgraph DATA_NET["Data Tier: 10.0.2.0/24"]
+            DATA_SWITCH[🔀 Data Switch<br/>Database Servers<br/>Storage Arrays<br/>Backup Systems]
+        end
+        
+        subgraph MGMT_NET["Management: 10.0.3.0/24"]
+            MGMT_SWITCH[🔀 Management Switch<br/>IPMI/iDRAC<br/>Monitoring<br/>Administrative Access]
+        end
+        
+        CORE_ROUTER[🌐 Core Router<br/>Inter-VLAN Routing<br/>Firewall Rules<br/>Traffic Shaping]
+    end
+    
+    subgraph OPTION3["🌐 Option 3: High Security (Enterprise)"]
+        subgraph EXTERNAL["🌍 External Zone"]
+            EXT_FIREWALL[🔥 External Firewall<br/>Perimeter Defense<br/>IPS/IDS<br/>Threat Detection]
+            EXT_SWITCH[🔀 External Switch<br/>Internet Connection<br/>Public Services<br/>Edge Security]
+        end
+        
+        subgraph INTERNAL["🏠 Internal Zone"]
+            INT_FIREWALL[🔥 Internal Firewall<br/>East-West Traffic<br/>Micro-segmentation<br/>Zero Trust]
+            INT_CORE[🌐 Core Switch<br/>High Performance<br/>Redundant Links<br/>QoS Management]
+        end
+        
+        subgraph SECURE["🔒 Secure Zone"]
+            SEC_FIREWALL[🔥 Security Firewall<br/>Database Access<br/>Secrets Management<br/>Audit Logging]
+            SEC_SWITCH[🔀 Secure Switch<br/>Isolated Network<br/>Encrypted Links<br/>Access Control]
+        end
+        
+        subgraph OOB["🛠️ Out-of-Band"]
+            OOB_SWITCH[🔀 OOB Switch<br/>Management Access<br/>Console Servers<br/>Emergency Access]
+        end
+    end
+    
+    %% Option 1 Flow
+    SINGLE_ROUTER --> SINGLE_SWITCH
+    SINGLE_SWITCH --> SINGLE_SERVERS
+    
+    %% Option 2 Flow
+    CORE_ROUTER --> DMZ_SWITCH
+    CORE_ROUTER --> APP_SWITCH
+    CORE_ROUTER --> DATA_SWITCH
+    CORE_ROUTER --> MGMT_SWITCH
+    
+    %% Option 3 Flow
+    EXT_FIREWALL --> EXT_SWITCH
+    EXT_SWITCH --> INT_FIREWALL
+    INT_FIREWALL --> INT_CORE
+    INT_CORE --> SEC_FIREWALL
+    SEC_FIREWALL --> SEC_SWITCH
+    OOB_SWITCH --> SEC_SWITCH
+    
+    %% Styling
+    classDef simple fill:#e8f5e8,stroke:#4caf50,stroke-width:3px,color:#000,font-weight:bold
+    classDef segmented fill:#fff3e0,stroke:#ff9800,stroke-width:3px,color:#000,font-weight:bold
+    classDef secure fill:#fce4ec,stroke:#e91e63,stroke-width:3px,color:#000,font-weight:bold
+    classDef management fill:#e0f2f1,stroke:#00695c,stroke-width:3px,color:#000,font-weight:bold
+    
+    class SINGLE_SWITCH,SINGLE_ROUTER,SINGLE_SERVERS simple
+    class DMZ_SWITCH,APP_SWITCH,DATA_SWITCH,CORE_ROUTER segmented
+    class EXT_FIREWALL,EXT_SWITCH,INT_FIREWALL,INT_CORE,SEC_FIREWALL,SEC_SWITCH secure
+    class MGMT_SWITCH,OOB_SWITCH management
+```
+
+### Bare Metal Security Layers
+
+```mermaid
+graph TD
+    subgraph PHYSICAL["🏢 Physical Security"]
+        DATACENTER[🏢 Data Center<br/>Biometric Access<br/>24/7 Security<br/>Environmental Controls]
+        RACKS[🗄️ Server Racks<br/>Locked Cabinets<br/>Cable Management<br/>Power Distribution]
+        CONSOLE[🖥️ Console Access<br/>KVM Switches<br/>Serial Consoles<br/>Emergency Access]
+    end
+    
+    subgraph NETWORK_SEC["🌐 Network Security"]
+        PERIMETER_FW[🔥 Perimeter Firewall<br/>External Threats<br/>DDoS Protection<br/>Geo-blocking]
+        INTERNAL_FW[🔥 Internal Firewall<br/>East-West Traffic<br/>Micro-segmentation<br/>Application Control]
+        IDS_IPS[🔍 IDS/IPS<br/>Intrusion Detection<br/>Threat Prevention<br/>Behavioral Analysis]
+        VPN[🔒 VPN Gateway<br/>Remote Access<br/>Site-to-Site<br/>Encrypted Tunnels]
+    end
+    
+    subgraph HOST_SEC["🖥️ Host Security"]
+        OS_HARDENING[🛡️ OS Hardening<br/>Minimal Installation<br/>Security Patches<br/>Configuration Baselines]
+        ANTIVIRUS[🦠 Antivirus/EDR<br/>Real-time Protection<br/>Behavioral Detection<br/>Incident Response]
+        HOST_FIREWALL[🔥 Host Firewall<br/>iptables/firewalld<br/>Service-specific Rules<br/>Logging]
+        FILE_INTEGRITY[📋 File Integrity<br/>AIDE/Tripwire<br/>Change Detection<br/>Compliance Monitoring]
+    end
+    
+    subgraph APP_SEC["🔐 Application Security"]
+        CONTAINER_SEC[🐳 Container Security<br/>Image Scanning<br/>Runtime Protection<br/>Policy Enforcement]
+        SECRET_MGMT[🔒 Secrets Management<br/>HashiCorp Vault<br/>Key Rotation<br/>Access Control]
+        TLS_MGMT[📜 TLS Management<br/>Certificate Authority<br/>Auto-renewal<br/>Strong Ciphers]
+        ACCESS_CONTROL[👮 Access Control<br/>RBAC Implementation<br/>Multi-factor Auth<br/>Session Management]
+    end
+    
+    subgraph MONITORING_SEC["👁️ Security Monitoring"]
+        SIEM[📊 SIEM Solution<br/>Log Aggregation<br/>Correlation Rules<br/>Threat Intelligence]
+        VULNERABILITY[🔍 Vulnerability Scanning<br/>OpenVAS/Nessus<br/>Compliance Checks<br/>Risk Assessment]
+        BACKUP_SEC[💾 Backup Security<br/>Encrypted Backups<br/>Offsite Storage<br/>Recovery Testing]
+        AUDIT[📋 Audit Logging<br/>Compliance Trails<br/>Change Tracking<br/>Forensic Analysis]
+    end
+    
+    %% Physical to Network
+    DATACENTER --> PERIMETER_FW
+    RACKS --> INTERNAL_FW
+    CONSOLE --> VPN
+    
+    %% Network to Host
+    PERIMETER_FW --> OS_HARDENING
+    INTERNAL_FW --> ANTIVIRUS
+    IDS_IPS --> HOST_FIREWALL
+    VPN --> FILE_INTEGRITY
+    
+    %% Host to Application
+    OS_HARDENING --> CONTAINER_SEC
+    ANTIVIRUS --> SECRET_MGMT
+    HOST_FIREWALL --> TLS_MGMT
+    FILE_INTEGRITY --> ACCESS_CONTROL
+    
+    %% Application to Monitoring
+    CONTAINER_SEC --> SIEM
+    SECRET_MGMT --> VULNERABILITY
+    TLS_MGMT --> BACKUP_SEC
+    ACCESS_CONTROL --> AUDIT
+    
+    %% Cross-layer Security
+    SIEM --> IDS_IPS
+    VULNERABILITY --> OS_HARDENING
+    AUDIT --> PERIMETER_FW
+    
+    %% Styling
+    classDef physical fill:#8d6e63,stroke:#5d4037,stroke-width:3px,color:#fff,font-weight:bold
+    classDef network fill:#1976d2,stroke:#1565c0,stroke-width:3px,color:#fff,font-weight:bold
+    classDef host fill:#388e3c,stroke:#2e7d32,stroke-width:3px,color:#fff,font-weight:bold
+    classDef application fill:#7b1fa2,stroke:#6a1b9a,stroke-width:3px,color:#fff,font-weight:bold
+    classDef monitoring fill:#f57c00,stroke:#ef6c00,stroke-width:3px,color:#000,font-weight:bold
+    
+    class DATACENTER,RACKS,CONSOLE physical
+    class PERIMETER_FW,INTERNAL_FW,IDS_IPS,VPN network
+    class OS_HARDENING,ANTIVIRUS,HOST_FIREWALL,FILE_INTEGRITY host
+    class CONTAINER_SEC,SECRET_MGMT,TLS_MGMT,ACCESS_CONTROL application
+    class SIEM,VULNERABILITY,BACKUP_SEC,AUDIT monitoring
+```
+
 ## Operating System Setup
 
 ### Ubuntu 22.04 LTS Setup

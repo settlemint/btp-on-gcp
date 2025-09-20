@@ -290,6 +290,162 @@ graph TB
     class PREEMPT_POD preemptible
 ```
 
+### Google Cloud Multi-Region Disaster Recovery Architecture
+
+```mermaid
+graph TD
+    subgraph PRIMARY["🏢 Primary Region (europe-west1)"]
+        subgraph PROD_GKE["☸️ Production GKE"]
+            PROD_LB[⚖️ Production Load Balancer<br/>Active Traffic<br/>Health Checks<br/>Global Distribution]
+            PROD_APP[🚀 BTP Application<br/>Active Workloads<br/>Real-time Processing<br/>Full Feature Set]
+        end
+        
+        subgraph PROD_DATA["🗄️ Production Data"]
+            PROD_SQL[🗄️ Cloud SQL Primary<br/>Regional HA Setup<br/>Continuous Backup<br/>Cross-region Replication]
+            PROD_STORAGE[📁 Cloud Storage Primary<br/>Multi-regional Bucket<br/>Versioning Enabled<br/>Lifecycle Policies]
+            PROD_REDIS[⚡ Memorystore Primary<br/>Standard Tier<br/>Automatic Failover<br/>Backup to Storage]
+        end
+    end
+    
+    subgraph SECONDARY["🏥 Disaster Recovery Region (us-central1)"]
+        subgraph DR_GKE["☸️ Standby GKE"]
+            DR_LB[⚖️ Standby Load Balancer<br/>Health Check Only<br/>Cloud DNS Failover<br/>Warm Standby]
+            DR_APP[🚀 BTP Application<br/>Warm Standby<br/>Automated Deployment<br/>Configuration Sync]
+        end
+        
+        subgraph DR_DATA["🗄️ Disaster Recovery Data"]
+            DR_SQL[🗄️ Cloud SQL Read Replica<br/>Cross-region Replica<br/>Promotion Ready<br/>Point-in-time Recovery]
+            DR_STORAGE[📁 Cloud Storage Replica<br/>Multi-regional Sync<br/>Same Bucket Policy<br/>Lifecycle Aligned]
+            DR_REDIS[⚡ Memorystore Standby<br/>Restore from Backup<br/>Configuration Sync<br/>Network Ready]
+        end
+    end
+    
+    subgraph MONITORING["📊 Global Monitoring"]
+        DNS_HEALTH[🌐 Cloud DNS<br/>Health Checks<br/>DNS Failover<br/>Global Traffic Management]
+        OPERATIONS[📊 Cloud Operations<br/>Cross-region Monitoring<br/>Centralized Dashboards<br/>Unified Alerting]
+        BACKUP_AUTOMATION[🔄 Backup Automation<br/>Cloud Functions<br/>Scheduled Tasks<br/>Cross-region Sync]
+    end
+    
+    %% Primary region flow
+    PROD_LB --> PROD_APP
+    PROD_APP --> PROD_SQL
+    PROD_APP --> PROD_STORAGE
+    PROD_APP --> PROD_REDIS
+    
+    %% Cross-region replication
+    PROD_SQL -.->|📋 Async Replication| DR_SQL
+    PROD_STORAGE -.->|📁 Multi-regional Sync| DR_STORAGE
+    PROD_REDIS -.->|💾 Backup Restore| DR_REDIS
+    
+    %% Disaster recovery flow
+    DR_LB --> DR_APP
+    DR_APP --> DR_SQL
+    DR_APP --> DR_STORAGE
+    DR_APP --> DR_REDIS
+    
+    %% Monitoring connections
+    DNS_HEALTH --> PROD_LB
+    DNS_HEALTH --> DR_LB
+    OPERATIONS --> PROD_GKE
+    OPERATIONS --> DR_GKE
+    BACKUP_AUTOMATION --> PROD_DATA
+    BACKUP_AUTOMATION --> DR_DATA
+    
+    %% Styling
+    classDef primary fill:#4caf50,stroke:#2e7d32,stroke-width:3px,color:#fff,font-weight:bold
+    classDef secondary fill:#ff9800,stroke:#f57c00,stroke-width:3px,color:#fff,font-weight:bold
+    classDef monitoring fill:#2196f3,stroke:#1565c0,stroke-width:3px,color:#fff,font-weight:bold
+    classDef data fill:#9c27b0,stroke:#7b1fa2,stroke-width:3px,color:#fff,font-weight:bold
+    
+    class PROD_LB,PROD_APP primary
+    class DR_LB,DR_APP secondary
+    class DNS_HEALTH,OPERATIONS,BACKUP_AUTOMATION monitoring
+    class PROD_SQL,PROD_STORAGE,PROD_REDIS,DR_SQL,DR_STORAGE,DR_REDIS data
+```
+
+### Google Cloud Security and Compliance Architecture
+
+```mermaid
+graph TD
+    subgraph PERIMETER["🛡️ Security Perimeter"]
+        ARMOR[🛡️ Cloud Armor<br/>DDoS Protection<br/>WAF Rules<br/>Bot Management]
+        CDN[🌐 Cloud CDN<br/>Global Edge Security<br/>SSL at Edge<br/>Geographic Blocking]
+        ENDPOINTS[🔗 Private Service Connect<br/>Private Endpoints<br/>VPC-native Access<br/>No Internet Routing]
+    end
+    
+    subgraph NETWORK["🌐 Network Security"]
+        VPC[🏠 Virtual Private Cloud<br/>Isolated Network<br/>Private Subnets<br/>Private Google Access]
+        FIREWALL[🔥 VPC Firewall Rules<br/>Network-level Security<br/>Ingress/Egress Control<br/>Tag-based Rules]
+        PROXY[🔀 Cloud NAT<br/>Outbound Internet Access<br/>No Inbound Exposure<br/>Regional Gateway]
+        PEERING[🔗 VPC Peering<br/>Cross-project Access<br/>Transitive Routing<br/>Secure Communication]
+    end
+    
+    subgraph IDENTITY["👤 Identity & Access"]
+        IAM[👤 Cloud IAM<br/>Identity Provider<br/>Conditional Access<br/>Policy Management]
+        WORKLOAD_ID[🎭 Workload Identity<br/>Pod-level Identity<br/>No Static Credentials<br/>Automatic Federation]
+        SERVICE_ACCOUNTS[🔐 Service Accounts<br/>Application Identity<br/>Key Management<br/>Principle of Least Privilege]
+        ORGANIZATION[🏢 Organization Policies<br/>Constraint Enforcement<br/>Resource Restrictions<br/>Compliance Controls]
+    end
+    
+    subgraph DATA_PROTECTION["🔐 Data Protection"]
+        KMS[🗝️ Cloud KMS<br/>Encryption Keys<br/>Hardware Security<br/>Regional & Global Keys]
+        SECRET_MANAGER[🔒 Secret Manager<br/>Credential Storage<br/>Automatic Rotation<br/>Fine-grained Access]
+        BINARY_AUTH[📋 Binary Authorization<br/>Container Image Security<br/>Attestation Required<br/>Policy Enforcement]
+        ENCRYPTION[🔐 Encryption at Rest<br/>Persistent Disk Encryption<br/>Cloud Storage Encryption<br/>Cloud SQL Encryption]
+    end
+    
+    subgraph MONITORING["👁️ Security Monitoring"]
+        AUDIT_LOGS[📋 Cloud Audit Logs<br/>API Activity Logging<br/>Data Access Logs<br/>System Events]
+        SCC[🛡️ Security Command Center<br/>Asset Discovery<br/>Vulnerability Management<br/>Threat Detection]
+        MONITORING[📊 Cloud Monitoring<br/>Security Metrics<br/>Custom Dashboards<br/>Alerting Policies]
+        LOGGING[📝 Cloud Logging<br/>Centralized Logs<br/>Log-based Metrics<br/>Export to BigQuery]
+    end
+    
+    %% Security Perimeter Flow
+    ARMOR --> CDN
+    CDN --> ENDPOINTS
+    ENDPOINTS --> VPC
+    
+    %% Network Security Flow
+    VPC --> FIREWALL
+    FIREWALL --> PROXY
+    PROXY --> PEERING
+    
+    %% Identity Flow
+    IAM --> WORKLOAD_ID
+    WORKLOAD_ID --> SERVICE_ACCOUNTS
+    SERVICE_ACCOUNTS --> ORGANIZATION
+    
+    %% Data Protection Flow
+    KMS --> SECRET_MANAGER
+    SECRET_MANAGER --> BINARY_AUTH
+    BINARY_AUTH --> ENCRYPTION
+    
+    %% Monitoring Flow
+    AUDIT_LOGS --> SCC
+    SCC --> MONITORING
+    MONITORING --> LOGGING
+    
+    %% Cross-layer Integration
+    WORKLOAD_ID --> KMS
+    ENDPOINTS --> SECRET_MANAGER
+    ORGANIZATION --> SCC
+    SERVICE_ACCOUNTS --> KMS
+    
+    %% Styling
+    classDef perimeter fill:#d32f2f,stroke:#c62828,stroke-width:3px,color:#fff,font-weight:bold
+    classDef network fill:#1976d2,stroke:#1565c0,stroke-width:3px,color:#fff,font-weight:bold
+    classDef identity fill:#388e3c,stroke:#2e7d32,stroke-width:3px,color:#fff,font-weight:bold
+    classDef protection fill:#7b1fa2,stroke:#6a1b9a,stroke-width:3px,color:#fff,font-weight:bold
+    classDef monitoring fill:#f57c00,stroke:#ef6c00,stroke-width:3px,color:#000,font-weight:bold
+    
+    class ARMOR,CDN,ENDPOINTS perimeter
+    class VPC,FIREWALL,PROXY,PEERING network
+    class IAM,WORKLOAD_ID,SERVICE_ACCOUNTS,ORGANIZATION identity
+    class KMS,SECRET_MANAGER,BINARY_AUTH,ENCRYPTION protection
+    class AUDIT_LOGS,SCC,MONITORING,LOGGING monitoring
+```
+
 ## Prerequisites
 
 ### Required Tools and Software
