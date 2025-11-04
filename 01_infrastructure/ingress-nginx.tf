@@ -52,7 +52,7 @@
 resource "helm_release" "nginx_ingress" {
   # Release identification and versioning
   name    = "ingress-nginx"
-  version = "4.13.3"  # Stable version with security fixes and performance improvements
+  version = "4.14.0"  # Stable version with security fixes and performance improvements
 
   # Official NGINX Ingress Controller Helm repository
   # Maintained by the Kubernetes community
