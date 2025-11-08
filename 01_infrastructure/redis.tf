@@ -84,7 +84,7 @@ resource "helm_release" "redis" {
   # Provides regularly updated, security-patched Redis deployments
   repository = "oci://registry-1.docker.io/bitnamicharts"
   chart      = "redis"
-  version    = "22.0.7"  # Stable version with Redis 7.x
+  version    = "23.2.12"  # Stable version with Redis 7.x
   
   # Deploy in cluster dependencies namespace
   # Co-locates with other infrastructure services
