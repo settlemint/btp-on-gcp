@@ -90,6 +90,6 @@ terraform {
   # - Review Terraform changelog for breaking changes
   # - Update all environments simultaneously to maintain consistency
   # - Consider using version ranges (~> 1.12.0) for patch updates only
-  required_version = "1.12.2"
+  required_version = "1.14.4"
 
 }
