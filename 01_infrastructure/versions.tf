@@ -132,6 +132,6 @@ terraform {
   # - Review Terraform changelog for breaking changes and new features
   # - Update all team environments simultaneously to maintain consistency
   # - Validate all infrastructure operations after version upgrades
-  required_version = "1.12.2"
+  required_version = "1.14.4"
 
 }
