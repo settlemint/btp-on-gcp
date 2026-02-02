@@ -71,7 +71,7 @@ resource "helm_release" "cert_manager" {
   # - Enhanced DNS provider integrations
   # - Improved certificate renewal reliability
   # - Security fixes and performance optimizations
-  version = "v1.19.2"
+  version = "v1.19.3"
   
   # Deploy in cluster dependencies namespace
   # Co-locates with other infrastructure services
