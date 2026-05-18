@@ -107,7 +107,7 @@ terraform {
     # - Test thoroughly before upgrading to newer versions
     kubectl = {
       source  = "alekc/kubectl"
-      version = "2.2.0"
+      version = "2.3.1"
     }
 
     # Additional providers are configured in providers.tf:
